@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{77CBFB60-5BC6-4C6F-99A6-E6A92F52DED4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Meziantou.OneDrive</RootNamespace>
+    <AssemblyName>Meziantou.OneDrive</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Audio.cs" />
+    <Compile Include="AuthenticationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuthenticationForm.designer.cs">
+      <DependentUpon>AuthenticationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ChunkedUploadSessionResult.cs" />
+    <Compile Include="ChunkUploadErrorEventArgs.cs" />
+    <Compile Include="Credential.cs" />
+    <Compile Include="CredentialManager.cs" />
+    <Compile Include="CredentialManagerRefreshTokenHandler.cs" />
+    <Compile Include="CredentialType.cs" />
+    <Compile Include="ExtendedWebBrowser.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="File.cs" />
+    <Compile Include="FileSystemInfo.cs" />
+    <Compile Include="Folder.cs" />
+    <Compile Include="Hashes.cs" />
+    <Compile Include="Identity.cs" />
+    <Compile Include="IdentitySet.cs" />
+    <Compile Include="Image.cs" />
+    <Compile Include="IRefreshTokenHandler.cs" />
+    <Compile Include="ItemReference.cs" />
+    <Compile Include="Location.cs" />
+    <Compile Include="MemoryRefreshTokenHandler.cs" />
+    <Compile Include="OneDriveClient.cs" />
+    <Compile Include="OneDriveClientGetOptions.cs" />
+    <Compile Include="OneDriveItem.cs" />
+    <Compile Include="OneDriveItemConverter.cs" />
+    <Compile Include="OneDriveToken.cs" />
+    <Compile Include="Package.cs" />
+    <Compile Include="PagedResponse.cs" />
+    <Compile Include="Photo.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RefreshTokenInfo.cs" />
+    <Compile Include="RemoveItem.cs" />
+    <Compile Include="SearchResult.cs" />
+    <Compile Include="Shared.cs" />
+    <Compile Include="SharedScope.cs" />
+    <Compile Include="SharepointIds.cs" />
+    <Compile Include="SpecialFolder.cs" />
+    <Compile Include="StreamWithDisposeEvents.cs" />
+    <Compile Include="Thumbnail.cs" />
+    <Compile Include="ThumbnailSet.cs" />
+    <Compile Include="Video.cs" />
+    <Compile Include="WebBrowserNavigateErrorEventArgs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="AuthenticationForm.resx">
+      <DependentUpon>AuthenticationForm.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
