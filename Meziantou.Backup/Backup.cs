@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,43 +9,84 @@ namespace Meziantou.Backup
 {
     public class Backup
     {
-        public ProviderConfiguration SourceProviderConfiguration { get; set; }
-        public ProviderConfiguration TargetProviderConfiguration { get; set; }
         public int RetryCount { get; set; } = 3;
         public bool CanDeleteFiles { get; set; } = false;
         public bool CanUpdateFiles { get; set; } = true;
         public bool CanCreateFiles { get; set; } = true;
         public bool CanDeleteDirectories { get; set; } = false;
         public bool CanCreateDirectories { get; set; } = true;
+        public int MaxDegreeOfParallelism { get; set; }
 
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
 
+        private BlockingCollection<Action> _blockingCollection;
+        private long _remaingDirectories = 0;
+
         private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
         {
-            await fileSystem.AuthenticateAsync(ct);
+            var authenticable = fileSystem as IAuthenticable;
+            if (authenticable != null)
+            {
+                await authenticable.LogInAsync(ct);
+            }
+
             return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct);
         }
 
-        public async Task BackupAsync(CancellationToken ct)
+        public async Task RunAsync(ProviderConfiguration source, ProviderConfiguration target, CancellationToken ct)
         {
-            if (SourceProviderConfiguration == null)
-                throw new InvalidOperationException("SourceProvider is null");
-
-            if (TargetProviderConfiguration == null)
-                throw new InvalidOperationException("TargetProvider is null");
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
 
             ct.ThrowIfCancellationRequested();
 
-            var sourceProvider = SourceProviderConfiguration.CreateProvider();
-            var targetProvider = TargetProviderConfiguration.CreateProvider();
+            var sourceProvider = source.CreateProvider();
+            var targetProvider = target.CreateProvider();
 
             var directories = await Task.WhenAll(
-               GetOrCreateRootDirectoryItemAsync(sourceProvider, SourceProviderConfiguration.Path, ct),
-               GetOrCreateRootDirectoryItemAsync(targetProvider, TargetProviderConfiguration.Path, ct)
+               GetOrCreateRootDirectoryItemAsync(sourceProvider, source.Path, ct),
+               GetOrCreateRootDirectoryItemAsync(targetProvider, target.Path, ct)
             );
 
-            await SynchronizeAsync(directories[0], directories[1], ct);
+            Run(directories[0], directories[1], ct);
+        }
+
+        public void Run(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
+
+            _blockingCollection = new BlockingCollection<Action>();
+
+            IncrementCounter();
+            EnqueueSynchronize(source, target, ct);
+
+            var parallelOptions = new ParallelOptions();
+            parallelOptions.CancellationToken = ct;
+            if (MaxDegreeOfParallelism > 0)
+            {
+                parallelOptions.MaxDegreeOfParallelism = MaxDegreeOfParallelism;
+            }
+
+            // Use ConcurrentQueue to enable safe enqueueing from multiple threads.
+            var exceptions = new ConcurrentQueue<Exception>();
+            Parallel.ForEach(_blockingCollection.GetConsumingPartitioner(ct), parallelOptions, item =>
+            {
+                if (item == null) throw new ArgumentNullException(nameof(item));
+
+                try
+                {
+                    item();
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Enqueue(ex);
+                }
+            });
+
+            if (exceptions.Count > 0)
+                throw new AggregateException(exceptions);
         }
 
         private async Task<T> RetryAsync<T>(Func<Task<T>> action)
@@ -106,6 +147,126 @@ namespace Meziantou.Backup
             return true;
         }
 
+        private void EnqueueTask(Action action, CancellationToken ct)
+        {
+            _blockingCollection.Add(action, ct);
+        }
+
+        private void EnqueueSynchronize(IDirectoryInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        {
+            EnqueueTask(async () =>
+            {
+                await SynchronizeAsync(sourceItem, targetItem, ct);
+                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, sourceItem, targetItem));
+            }, ct);
+        }
+
+        private void IncrementCounter()
+        {
+            Interlocked.Increment(ref _remaingDirectories);
+        }
+
+        private void DecrementCounter()
+        {
+            Interlocked.Decrement(ref _remaingDirectories);
+        }
+
+        private void EnqueueCreateItem(IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        {
+            var file = sourceItem as IFileInfo;
+            if (file != null)
+            {
+                if (CanCreateFiles)
+                {
+                    if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceItem, targetItem)))
+                        return;
+
+                    EnqueueTask(async () =>
+                    {
+                        var fi = await RetryAsync(() => targetItem.CopyFileAsync(file, ct));
+                        OnAction(new BackupActionEventArgs(BackupAction.Created, file, fi));
+                    }, ct);
+                }
+            }
+            else
+            {
+                var sourceDirectory = sourceItem as IDirectoryInfo;
+                if (sourceDirectory != null)
+                {
+                    if (CanCreateDirectories)
+                    {
+                        if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceDirectory, targetItem)))
+                            return;
+
+                        IncrementCounter();
+                        EnqueueTask(async () =>
+                        {
+                            var di = await RetryAsync(() => targetItem.CreateDirectoryAsync(sourceDirectory.Name, ct));
+                            OnAction(new BackupActionEventArgs(BackupAction.Created, sourceItem, di));
+
+                            // Continue synchonization
+                            EnqueueSynchronize(sourceDirectory, di, ct);
+                        }, ct);
+                    }
+                }
+            }
+        }
+
+        private void EnqueueUpdateItem(IFileInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        {
+            if (CanUpdateFiles)
+            {
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem)))
+                    return;
+
+                EnqueueTask(async () =>
+                {
+                    var fi = await RetryAsync(() => targetItem.CopyFileAsync(sourceItem, ct));
+                    OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceItem, fi));
+                }, ct);
+            }
+        }
+
+        private void EnqueueDeleteItem(IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
+        {
+            if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem)))
+                return;
+
+            var file = targetItem as IFileInfo;
+            if (file != null)
+            {
+                if (CanDeleteFiles)
+                {
+                    if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
+                        return;
+
+                    EnqueueTask(async () =>
+                    {
+                        await RetryAsync(() => targetItem.DeleteAsync(ct));
+                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
+                    }, ct);
+                }
+            }
+            else
+            {
+                var directory = targetItem as IDirectoryInfo;
+                if (directory != null)
+                {
+                    if (CanDeleteDirectories)
+                    {
+                        if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
+                            return;
+
+                        EnqueueTask(async () =>
+                        {
+                            await RetryAsync(() => directory.DeleteAsync(ct));
+                            OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
+                        }, ct);
+                    }
+                }
+            }
+        }
+
         protected virtual async Task SynchronizeAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -119,21 +280,17 @@ namespace Meziantou.Backup
             var sourceItems = await RetryAsync(() => source.GetItemsAsync(ct));
             var targetItems = await RetryAsync(() => target.GetItemsAsync(ct));
 
-            var targetDirectories = new List<IDirectoryInfo>(targetItems.OfType<IDirectoryInfo>());
+            //var targetDirectories = new List<IDirectoryInfo>(targetItems.OfType<IDirectoryInfo>());
 
             //
             // Compute differencies
             //
-            var toBeCreatedItems = new List<IFileSystemInfo>();
-            var toBeDeletedItems = new List<IFileSystemInfo>();
-            var toBeUpdatedItems = new List<IFileSystemInfo>();
-
             foreach (var sourceItem in sourceItems)
             {
                 var targetItem = targetItems.Get(sourceItem);
                 if (targetItem == null)
                 {
-                    toBeCreatedItems.Add(sourceItem);
+                    EnqueueCreateItem(sourceItem, target, ct);
                     continue;
                 }
 
@@ -143,7 +300,7 @@ namespace Meziantou.Backup
                 {
                     if (!AreEqual(sourceFileItem, targetFileItem))
                     {
-                        toBeUpdatedItems.Add(sourceItem);
+                        EnqueueUpdateItem(sourceFileItem, target, ct);
                         continue;
                     }
                 }
@@ -153,107 +310,30 @@ namespace Meziantou.Backup
             {
                 if (sourceItems.Get(targetItem) == null)
                 {
-                    toBeDeletedItems.Add(targetItem);
+                    EnqueueDeleteItem(source, targetItem, ct);
                 }
             }
 
             ct.ThrowIfCancellationRequested();
 
             //
-            // Handle items
-            //
-            foreach (var item in toBeCreatedItems)
-            {
-                var file = item as IFileInfo;
-                if (file != null)
-                {
-                    if (CanCreateFiles)
-                    {
-                        if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, item, target)))
-                            return;
-
-                        var fi = await RetryAsync(() => target.CopyFileAsync(file, ct));
-                        OnAction(new BackupActionEventArgs(BackupAction.Created, item, fi));
-                    }
-                }
-                else
-                {
-                    var directory = item as IDirectoryInfo;
-                    if (directory != null)
-                    {
-                        if (CanCreateDirectories)
-                        {
-                            if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, item, target)))
-                                return;
-
-                            var di = await RetryAsync(() => target.CreateDirectoryAsync(directory.Name, ct));
-                            targetDirectories.Add(di);
-                            OnAction(new BackupActionEventArgs(BackupAction.Created, item, di));
-                        }
-                    }
-                }
-            }
-
-            foreach (var item in toBeUpdatedItems)
-            {
-                var file = item as IFileInfo;
-                if (file != null)
-                {
-                    if (CanUpdateFiles)
-                    {
-                        if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, item, target)))
-                            continue;
-
-                        var fi = await RetryAsync(() => target.CopyFileAsync(file, ct));
-                        OnAction(new BackupActionEventArgs(BackupAction.Updated, item, fi));
-                    }
-                }
-            }
-
-            foreach (var item in toBeDeletedItems)
-            {
-                var file = item as IFileInfo;
-                if (file != null)
-                {
-                    if (CanDeleteFiles)
-                    {
-                        if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, item, target)))
-                            return;
-
-                        await RetryAsync(() => target.DeleteAsync(ct));
-                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, item, target));
-                    }
-                }
-                else
-                {
-                    var directory = item as IDirectoryInfo;
-                    if (directory != null)
-                    {
-                        if (CanDeleteDirectories)
-                        {
-                            if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, item, target)))
-                                return;
-
-                            await RetryAsync(() => directory.DeleteAsync(ct));
-                            OnAction(new BackupActionEventArgs(BackupAction.Deleted, item, target));
-                        }
-                    }
-                }
-            }
-
-            //
             // Synchronize sub folders
             //
             foreach (var directory in sourceItems.OfType<IDirectoryInfo>())
             {
-                var targetDirectory = targetDirectories.Get(directory);
+                var targetDirectory = targetItems.Get(directory) as IDirectoryInfo;
                 if (targetDirectory != null)
                 {
-                    await SynchronizeAsync(directory, targetDirectory, ct);
+                    IncrementCounter();
+                    EnqueueSynchronize(directory, targetDirectory, ct);
                 }
             }
 
-            OnAction(new BackupActionEventArgs(BackupAction.Synchronized, source, target));
+            DecrementCounter();
+            if (_remaingDirectories == 0)
+            {
+                _blockingCollection.CompleteAdding();
+            }
         }
 
         protected virtual bool OnAction(BackupActionEventArgs e)

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.Abstractions", "Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj", "{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.BackupTests", "Meziantou.BackupTests\Meziantou.BackupTests.csproj", "{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

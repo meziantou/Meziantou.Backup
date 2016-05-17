@@ -34,6 +34,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IAuthenticable.cs" />
     <Compile Include="IDirectoryInfo.cs" />
     <Compile Include="IFileInfo.cs" />
     <Compile Include="IFileSystem.cs" />

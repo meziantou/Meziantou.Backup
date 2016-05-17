@@ -7,6 +7,5 @@ namespace Meziantou.Backup.FileSystem.Abstractions
     {
         Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct);
         void Initialize(string data);
-        Task AuthenticateAsync(CancellationToken ct);
     }
 }

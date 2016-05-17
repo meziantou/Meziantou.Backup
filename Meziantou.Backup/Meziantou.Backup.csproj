@@ -52,6 +52,7 @@
     <Compile Include="BackupAction.cs" />
     <Compile Include="BackupActionEventArgs.cs" />
     <Compile Include="BackupErrorEventArgs.cs" />
+    <Compile Include="BlockingCollectionExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProviderConfiguration.cs" />
   </ItemGroup>

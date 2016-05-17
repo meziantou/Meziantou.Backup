@@ -5,19 +5,19 @@ using Meziantou.OneDrive;
 
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
-    public class OneDriveFileSystem : IFileSystem
+    public class OneDriveFileSystem : IFileSystem, IAuthenticable
     {
-        private readonly OneDriveClient _client;
+        public OneDriveClient Client { get; }
 
         public OneDriveFileSystem()
         {
-            _client = new OneDriveClient();
-            _client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler("Meziantou.Backup");
+            Client = new OneDriveClient();
+            Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler("Meziantou.Backup");
         }
 
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
-            var item = await _client.CreateDirectoryAsync(path, ct);
+            var item = await Client.CreateDirectoryAsync(path, ct);
             return new OneDriveFileInfo(item);
         }
 
@@ -25,9 +25,14 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         {
         }
 
-        public Task AuthenticateAsync(CancellationToken ct)
+        public Task LogInAsync(CancellationToken ct)
         {
-            return _client.AuthenticateAsync(ct);
+            return Client.AuthenticateAsync(ct);
+        }
+
+        public Task LogOutAsync(CancellationToken ct)
+        {
+            return Client.LogOutAsync(ct);
         }
     }
 }
