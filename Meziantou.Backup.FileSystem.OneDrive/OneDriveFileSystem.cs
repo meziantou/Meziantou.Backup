@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 using Meziantou.OneDrive;
@@ -12,7 +13,6 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         public OneDriveFileSystem()
         {
             Client = new OneDriveClient();
-            Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler("Meziantou.Backup");
         }
 
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
@@ -21,8 +21,17 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             return new OneDriveFileInfo(item);
         }
 
-        public void Initialize(string data)
+        public void Initialize(IDictionary<string, object> data)
         {
+            if (data == null)
+                return;
+
+
+            var appName = data["ApplicationName"] as string;
+            if (appName != null)
+            {
+                Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName);
+            }
         }
 
         public Task LogInAsync(CancellationToken ct)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
@@ -14,7 +15,7 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
             return Task.FromResult<IDirectoryInfo>(_root);
         }
 
-        public void Initialize(string data)
+        public void Initialize(IDictionary<string, object> data)
         {
         }
 

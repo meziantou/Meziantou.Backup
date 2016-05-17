@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.OneDrive
 {
-    internal class MemoryRefreshTokenHandler : IRefreshTokenHandler
+    public class MemoryRefreshTokenHandler : IRefreshTokenHandler
     {
         private RefreshTokenInfo _token;
 
