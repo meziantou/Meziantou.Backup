@@ -20,7 +20,7 @@ namespace Meziantou.Backup
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
 
-        private BlockingCollection<Action> _blockingCollection;
+        private BlockingCollection<Func<Task>> _blockingCollection;
         private long _remaingDirectories = 0;
 
         private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
@@ -57,7 +57,7 @@ namespace Meziantou.Backup
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            _blockingCollection = new BlockingCollection<Action>();
+            _blockingCollection = new BlockingCollection<Func<Task>>();
 
             IncrementCounter();
             EnqueueSynchronize(source, target, ct);
@@ -71,13 +71,13 @@ namespace Meziantou.Backup
 
             // Use ConcurrentQueue to enable safe enqueueing from multiple threads.
             var exceptions = new ConcurrentQueue<Exception>();
-            Parallel.ForEach(_blockingCollection.GetConsumingPartitioner(ct), parallelOptions, item =>
+            Parallel.ForEach(_blockingCollection.GetConsumingPartitioner(ct), parallelOptions, async item =>
             {
                 if (item == null) throw new ArgumentNullException(nameof(item));
 
                 try
                 {
-                    item();
+                    await item();
                 }
                 catch (Exception ex)
                 {
@@ -147,7 +147,7 @@ namespace Meziantou.Backup
             return true;
         }
 
-        private void EnqueueTask(Action action, CancellationToken ct)
+        private void EnqueueTask(Func<Task> action, CancellationToken ct)
         {
             _blockingCollection.Add(action, ct);
         }
