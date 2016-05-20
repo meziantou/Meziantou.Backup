@@ -39,7 +39,10 @@ namespace Meziantou.Backup.FileSystem.Physical
                     var fi = fileSystemInfo as FileInfo;
                     if (fi != null)
                     {
-                        result.Add(new PhysicalFileInfo(fi));
+                        if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                        {
+                            result.Add(new PhysicalFileInfo(fi));
+                        }
                     }
                 }
             }
