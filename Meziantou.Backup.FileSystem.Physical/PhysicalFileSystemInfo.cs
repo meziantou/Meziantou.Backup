@@ -19,6 +19,7 @@ namespace Meziantou.Backup.FileSystem.Physical
             _fsi = fsi;
         }
 
+        public abstract bool IsDirectory { get; }
         public string Name => _fsi.Name;
         public string FullName => _fsi.FullName;
         public string Extension => _fsi.Extension;

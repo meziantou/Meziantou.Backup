@@ -19,12 +19,7 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
         {
         }
 
-        public Task AuthenticateAsync(CancellationToken ct)
-        {
-            return Task.CompletedTask;
-        }
-
-        public void AddItem(string path)
+        public void AddItem(string path, byte[] content = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -36,7 +31,7 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
                 var part = parts[index];
                 if (!isDirectory && index == parts.Length - 1)
                 {
-                    di.CreateFileAsync(part, null, 0, CancellationToken.None).Wait();
+                    di.CreateFileAsync(part, content ?? new byte[0], CancellationToken.None).Wait();
                 }
                 else
                 {
@@ -49,6 +44,13 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
+            return GetItem(path) != null;
+        }
+
+        public InMemoryFileSystemInfo GetItem(string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
             bool isDirectory = path.EndsWith("/") || path.EndsWith("\\");
             var parts = path.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
             var di = _root;
@@ -57,18 +59,25 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
                 var part = parts[index];
                 if (!isDirectory && index == parts.Length - 1)
                 {
-                    return di.GetFile(part) != null;
+                    return di.GetFile(part);
                 }
                 else
                 {
                     di = di.GetDirectory(part);
                 }
-
-                if (di == null)
-                    return false;
             }
 
-            return true;
+            return di;
+        }
+
+        public InMemoryFileInfo GetFile(string path)
+        {
+            return GetItem(path) as InMemoryFileInfo;
+        }
+
+        public InMemoryDirectoryInfo GetDirectory(string path)
+        {
+            return GetItem(path) as InMemoryDirectoryInfo;
         }
     }
 }

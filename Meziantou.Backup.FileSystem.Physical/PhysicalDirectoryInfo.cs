@@ -15,6 +15,7 @@ namespace Meziantou.Backup.FileSystem.Physical
     public class PhysicalDirectoryInfo : PhysicalFileSystemInfo, IDirectoryInfo
     {
         private readonly DirectoryInfo _di;
+        public override bool IsDirectory => true;
 
         public PhysicalDirectoryInfo(DirectoryInfo di) : base(di)
         {

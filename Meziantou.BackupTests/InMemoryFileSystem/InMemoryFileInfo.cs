@@ -19,5 +19,15 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
         public InMemoryFileInfo(InMemoryDirectoryInfo parent) : base(parent)
         {
         }
+
+        public void SetContent(Stream stream)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                Content = ms.ToArray();
+            }
+        }
     }
 }

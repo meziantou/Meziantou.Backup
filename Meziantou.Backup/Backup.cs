@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
@@ -16,6 +19,7 @@ namespace Meziantou.Backup
         public bool CanDeleteDirectories { get; set; } = false;
         public bool CanCreateDirectories { get; set; } = true;
         public int MaxDegreeOfParallelism { get; set; }
+        public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
@@ -132,19 +136,126 @@ namespace Meziantou.Backup
             }
         }
 
-        protected virtual bool AreEqual(IFileInfo source, IFileInfo target)
+        protected virtual async Task<bool> AreEqualAsync(IFileInfo source, IFileInfo target, CancellationToken ct)
         {
-            if (source.LastWriteTimeUtc > target.LastWriteTimeUtc)
-            {
+            if (source == null && target == null)
+                return true;
+
+            if (source == null || target == null)
                 return false;
+
+            if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Length))
+            {
+                if (source.Length != target.Length)
+                    return false;
             }
 
-            if (source.Length != target.Length)
+            if (EqualityMethods.HasFlag(FileInfoEqualityMethods.LastWriteTime))
             {
-                return false;
+                if (source.LastWriteTimeUtc > target.LastWriteTimeUtc)
+                    return false;
+            }
+
+            // Use content or hash, not both (useless)
+            if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Content))
+            {
+                using (var xStream = await source.OpenReadAsync(ct))
+                using (var yStream = await target.OpenReadAsync(ct))
+                {
+                    byte[] xBuffer = new byte[81920];
+                    byte[] yBuffer = new byte[81920];
+                    var xTask = xStream.ReadAsync(xBuffer, 0, xBuffer.Length, ct);
+                    var yTask = yStream.ReadAsync(yBuffer, 0, yBuffer.Length, ct);
+                    var xRead = await xTask;
+                    var yRead = await yTask;
+
+                    if (xRead != yRead)
+                        return false;
+
+                    for (int i = 0; i < xRead; i++)
+                    {
+                        if (xBuffer[i] != yBuffer[i])
+                            return false;
+                    }
+                }
+            }
+            else if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5) ||
+                EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha1) ||
+                EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256) ||
+                EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
+            {
+                using (var xStream = await source.OpenReadAsync(ct))
+                using (var yStream = await target.OpenReadAsync(ct))
+                {
+                    var xHashTask = ComputeHashAsync(xStream, ct);
+                    var yHashTask = ComputeHashAsync(yStream, ct);
+                    var xHash = await xHashTask;
+                    var yHash = await yHashTask;
+                    if (xHash.Zip(yHash, (a, b) => AreSame(a.Item2, b.Item2)).Any(areSame => areSame == false))
+                        return false;
+                }
             }
 
             return true;
+        }
+
+        private static bool AreSame(byte[] a, byte[] b)
+        {
+            if (a == null && b == null)
+                return true;
+
+            if (a == null || b == null)
+                return false;
+
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        protected virtual async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(Stream stream, CancellationToken ct)
+        {
+            var algorithms = new List<HashResult>();
+            try
+            {
+                // Init algorithm
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5))
+                    algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentMd5));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha1))
+                    algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentSha1));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256))
+                    algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentSha256));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
+                    algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentSha512));
+
+                byte[] buffer = new byte[81920];
+                int read;
+                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                {
+                    foreach (var hashAlgorithm in algorithms)
+                    {
+                        hashAlgorithm.TransformBlock(buffer, read);
+                    }
+                }
+
+                return algorithms.Select(result => Tuple.Create(result.Method, result.TransformFinalBlock())).ToList();
+            }
+            finally
+            {
+                foreach (var hashAlgorithm in algorithms)
+                {
+                    hashAlgorithm.Dispose();
+                }
+            }
         }
 
         private void EnqueueTask(Func<Task> action, CancellationToken ct)
@@ -229,9 +340,6 @@ namespace Meziantou.Backup
 
         private void EnqueueDeleteItem(IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
         {
-            if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem)))
-                return;
-
             var file = targetItem as IFileInfo;
             if (file != null)
             {
@@ -280,13 +388,14 @@ namespace Meziantou.Backup
             var sourceItems = await RetryAsync(() => source.GetItemsAsync(ct));
             var targetItems = await RetryAsync(() => target.GetItemsAsync(ct));
 
-            //var targetDirectories = new List<IDirectoryInfo>(targetItems.OfType<IDirectoryInfo>());
-
             //
             // Compute differencies
             //
             foreach (var sourceItem in sourceItems)
             {
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, sourceItem, target)))
+                    continue;
+
                 var targetItem = targetItems.Get(sourceItem);
                 if (targetItem == null)
                 {
@@ -298,12 +407,14 @@ namespace Meziantou.Backup
                 var targetFileItem = targetItem as IFileInfo;
                 if (sourceFileItem != null && targetFileItem != null)
                 {
-                    if (!AreEqual(sourceFileItem, targetFileItem))
+                    if (!await AreEqualAsync(sourceFileItem, targetFileItem, ct))
                     {
                         EnqueueUpdateItem(sourceFileItem, target, ct);
                         continue;
                     }
                 }
+
+                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, sourceItem, target));
             }
 
             foreach (var targetItem in targetItems)
@@ -350,6 +461,54 @@ namespace Meziantou.Backup
 
             Error?.Invoke(this, e);
             return !e.Cancel;
+        }
+
+        private class HashResult : IDisposable
+        {
+            private readonly HashAlgorithm _algorithm;
+
+            public FileInfoEqualityMethods Method { get; }
+
+            public HashResult(FileInfoEqualityMethods method)
+            {
+                Method = method;
+                if (method.HasFlag(FileInfoEqualityMethods.ContentMd5))
+                {
+                    _algorithm = MD5.Create();
+                }
+                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha1))
+                {
+                    _algorithm = SHA1.Create();
+                }
+                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha256))
+                {
+                    _algorithm = SHA256.Create();
+                }
+                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha512))
+                {
+                    _algorithm = SHA512.Create();
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(method));
+                }
+            }
+
+            public void TransformBlock(byte[] bytes, int count)
+            {
+                _algorithm.TransformBlock(bytes, 0, count, null, 0);
+            }
+
+            public byte[] TransformFinalBlock()
+            {
+                _algorithm.TransformFinalBlock(new byte[0], 0, 0);
+                return _algorithm.Hash;
+            }
+
+            public void Dispose()
+            {
+                _algorithm?.Dispose();
+            }
         }
     }
 }

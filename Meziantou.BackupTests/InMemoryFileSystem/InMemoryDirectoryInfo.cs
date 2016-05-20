@@ -33,24 +33,19 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
 
         public Task<IFileInfo> CreateFileAsync(string name, Stream stream, long length, CancellationToken ct)
         {
-            var item = GetFile(name);
-            if (item != null)
-                return Task.FromResult<IFileInfo>(item);
-
-            var file = new InMemoryFileInfo(this);
-            file.Name = name;
-
-            if (stream != null)
+            var file = GetFile(name);
+            if (file == null)
             {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    stream.CopyTo(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
-                    file.Content = ms.ToArray();
-                }
+                file = new InMemoryFileInfo(this);
+                _children.Add(file);
             }
 
-            _children.Add(file);
+            file.Name = name;
+            if (stream != null)
+            {
+                file.SetContent(stream);
+            }
+
             return Task.FromResult<IFileInfo>(file);
         }
 

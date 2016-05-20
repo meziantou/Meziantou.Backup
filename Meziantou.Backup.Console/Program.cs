@@ -74,27 +74,20 @@ namespace Meziantou.Backup.Console
             Backup backup = new Backup();
             backup.Action += Backup_Action;
             backup.Error += Backup_Error;
-            //var sourceProviderConfiguration = new ProviderConfiguration
-            //{
-            //    ProviderName = typeof(PhysicalFileSystem).AssemblyQualifiedName,
-            //    Path = @"C:\Users\meziantou\Desktop\Publish\"
-            //};
-
-            //backup.TargetProviderConfiguration = new ProviderConfiguration()
-            //{
-            //    ProviderName = typeof(PhysicalDrive).FullName,
-            //    Path = @"C:\Users\meziantou\Desktop\Publish - backup\"
-            //};
-
-            //var targetProviderConfiguration = new ProviderConfiguration()
-            //{
-            //    ProviderName = typeof(OneDriveFileSystem).AssemblyQualifiedName,
-            //    Path = @"/Backup - Sample/Test1/sub/"
-            //};
+            var summary = new BackupSummary(backup);
 
             var backupAsync = backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None);
             var awaiter = backupAsync.GetAwaiter();
             awaiter.GetResult();
+
+            System.Console.WriteLine("Directories: " + summary.DirectoryCount);
+            System.Console.WriteLine("  Created: " + summary.DirectoryCreatedCount);
+            System.Console.WriteLine("  Deleted: " + summary.DirectoryDeletedCount);
+
+            System.Console.WriteLine("File: " + summary.FileCount);
+            System.Console.WriteLine("  Created: " + summary.FileCreatedCount);
+            System.Console.WriteLine("  Updated: " + summary.FileUpdatedCount);
+            System.Console.WriteLine("  Deleted: " + summary.FileDeletedCount);
         }
 
         private static void Backup_Error(object sender, BackupErrorEventArgs e)

@@ -6,8 +6,8 @@ namespace Meziantou.Backup.FileSystem.Abstractions
 {
     public interface IFileSystemInfo
     {
+        bool IsDirectory { get; }
         string Name { get; }
-        string Extension { get; }
         bool Exists { get; }
         DateTime CreationTimeUtc { get; }
         DateTime LastWriteTimeUtc { get; }

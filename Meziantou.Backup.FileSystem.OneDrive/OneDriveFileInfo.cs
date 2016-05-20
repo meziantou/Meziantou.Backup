@@ -23,6 +23,8 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
         public string Name => _item.Name;
 
+        public bool IsDirectory => _item.Folder != null;
+
         public string Extension
         {
             get

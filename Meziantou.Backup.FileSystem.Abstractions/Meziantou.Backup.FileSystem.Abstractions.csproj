@@ -40,7 +40,7 @@
     <Compile Include="IFileSystem.cs" />
     <Compile Include="IFileSystemInfo.cs" />
     <Compile Include="IFullName.cs" />
-    <Compile Include="ItemEqualityComparer.cs" />
+    <Compile Include="FileSystemInfoEqualityComparer.cs" />
     <Compile Include="ItemExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -3,8 +3,10 @@ using System.Collections.Generic;
 
 namespace Meziantou.Backup.FileSystem.Abstractions
 {
-    public class ItemEqualityComparer : IEqualityComparer<IFileSystemInfo>
+    public class FileSystemInfoEqualityComparer : IEqualityComparer<IFileSystemInfo>
     {
+        public StringComparison StringComparison { get; set; } = StringComparison.OrdinalIgnoreCase;
+
         public bool Equals(IFileSystemInfo x, IFileSystemInfo y)
         {
             if (x == null && y == null)
@@ -13,13 +15,13 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             if (x == null || y == null)
                 return false;
 
-            if (!string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase))
+            if (x.IsDirectory != y.IsDirectory)
                 return false;
 
-            if (x is IFileInfo && !(y is IFileInfo))
+            if (x.Exists != y.Exists)
                 return false;
 
-            if (x is IDirectoryInfo && !(y is IDirectoryInfo))
+            if (!string.Equals(x.Name, y.Name, StringComparison))
                 return false;
 
             return true;

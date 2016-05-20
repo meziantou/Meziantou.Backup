@@ -15,6 +15,8 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
 
         public InMemoryDirectoryInfo Parent { get; }
 
+        public bool IsDirectory => this is InMemoryDirectoryInfo;
+
         public string Name { get; set; }
 
         public string Extension => Path.GetExtension(Name);
