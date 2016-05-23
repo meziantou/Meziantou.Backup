@@ -17,7 +17,7 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
-            var item = await Client.CreateDirectoryAsync(path, ct);
+            var item = await Client.CreateDirectoryAsync(path, ct).ConfigureAwait(false);
             return new OneDriveFileInfo(item);
         }
 
@@ -26,11 +26,27 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             if (data == null)
                 return;
 
-
-            var appName = data["ApplicationName"] as string;
-            if (appName != null)
+            object o;
+            if (data.TryGetValue("ApplicationName", out o))
             {
-                Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName);
+                var appName = o as string;
+                if (appName != null)
+                {
+                    Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName);
+                }
+            }
+
+            if (data.TryGetValue("AuthenticateOnUnauthenticatedError", out o))
+            {
+                var value = o as string;
+                if (value != null)
+                {
+                    bool b;
+                    if (bool.TryParse(value, out b))
+                    {
+                        Client.AuthenticateOnUnauthenticatedError = b;
+                    }
+                }
             }
         }
 

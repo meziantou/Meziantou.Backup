@@ -59,7 +59,7 @@ namespace Meziantou.Backup.FileSystem.Physical
             var fi = new FileInfo(path);
             using (var dest = fi.Create())
             {
-                await stream.CopyToAsync(dest, 81920 /* Stream._DefaultCopyBufferSize */, ct);
+                await stream.CopyToAsync(dest, 81920 /* Stream._DefaultCopyBufferSize */, ct).ConfigureAwait(false);
             }
 
             return new PhysicalFileInfo(fi);

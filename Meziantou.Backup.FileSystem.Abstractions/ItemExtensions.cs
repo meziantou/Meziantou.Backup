@@ -29,9 +29,9 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (file == null) throw new ArgumentNullException(nameof(file));
 
-            using (var inputStream = await file.OpenReadAsync(ct))
+            using (var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false))
             {
-                return await directory.CreateFileAsync(file.Name, inputStream, file.Length, ct);
+                return await directory.CreateFileAsync(file.Name, inputStream, file.Length, ct).ConfigureAwait(false);
             }
         }
 
@@ -57,7 +57,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             
             using (MemoryStream ms = new MemoryStream(content))
             {
-                return await parent.CreateFileAsync(name, ms, ms.Length, ct);
+                return await parent.CreateFileAsync(name, ms, ms.Length, ct).ConfigureAwait(false);
             }
         }
     }

@@ -59,14 +59,14 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
         public async Task<IReadOnlyCollection<IFileSystemInfo>> GetItemsAsync(CancellationToken ct)
         {
-            var oneDriveItems = await _item.GetChildrenAsync(ct);
+            var oneDriveItems = await _item.GetChildrenAsync(ct).ConfigureAwait(false);
             return oneDriveItems.Select(item => new OneDriveFileInfo(item)).ToList();
         }
 
         public async Task<IFileInfo> CreateFileAsync(string name, Stream stream, long length, CancellationToken ct)
         {
             const int chunckSize = 1 * 1024 * 1024;  // 1MB
-            var oneDriveItem = await _item.CreateFileAsync(name, stream, length, chunckSize, OnChunkErrorHandler, ct);
+            var oneDriveItem = await _item.CreateFileAsync(name, stream, length, chunckSize, OnChunkErrorHandler, ct).ConfigureAwait(false);
             return new OneDriveFileInfo(oneDriveItem);
         }
 
@@ -78,7 +78,7 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
         public async Task<IDirectoryInfo> CreateDirectoryAsync(string name, CancellationToken ct)
         {
-            var item = await _item.CreateDirectoryAsync(name, ct);
+            var item = await _item.CreateDirectoryAsync(name, ct).ConfigureAwait(false);
             return new OneDriveFileInfo(item);
         }
 

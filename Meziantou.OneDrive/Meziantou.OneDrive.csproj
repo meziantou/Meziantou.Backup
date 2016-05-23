@@ -55,6 +55,8 @@
     <Compile Include="CredentialManager.cs" />
     <Compile Include="CredentialManagerRefreshTokenHandler.cs" />
     <Compile Include="CredentialType.cs" />
+    <Compile Include="Error.cs" />
+    <Compile Include="ErrorResponse.cs" />
     <Compile Include="ExtendedWebBrowser.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -71,6 +73,8 @@
     <Compile Include="MemoryRefreshTokenHandler.cs" />
     <Compile Include="OneDriveClient.cs" />
     <Compile Include="OneDriveClientGetOptions.cs" />
+    <Compile Include="OneDriveErrorCode.cs" />
+    <Compile Include="OneDriveException.cs" />
     <Compile Include="OneDriveItem.cs" />
     <Compile Include="OneDriveItemConverter.cs" />
     <Compile Include="OneDriveToken.cs" />

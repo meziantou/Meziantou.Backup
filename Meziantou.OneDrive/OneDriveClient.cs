@@ -25,6 +25,7 @@ namespace Meziantou.OneDrive
         private readonly string[] _scopes = { "wl.signin", "wl.offline_access", "onedrive.readwrite" };
 
         public IRefreshTokenHandler RefreshTokenHandler { get; set; }
+        public bool AuthenticateOnUnauthenticatedError { get; set; } = true;
 
         public bool IsAuthenticated => _accessCode != null;
 
@@ -43,23 +44,28 @@ namespace Meziantou.OneDrive
             _accessCode = null;
             if (removeRefreshToken && RefreshTokenHandler != null)
             {
-                await RefreshTokenHandler.DeleteRefreshTokenAsync(ct);
+                await RefreshTokenHandler.DeleteRefreshTokenAsync(ct).ConfigureAwait(false);
             }
 
             if (removeCookies)
             {
                 string logoutUrl = $"https://login.live.com/oauth20_logout.srf?client_id={Uri.EscapeDataString(ApplicationId)}&redirect_uri={Uri.EscapeDataString(ReturnUrl)}";
-                await GetAsync(logoutUrl, OneDriveClientGetOptions.None, ct);
+                await GetAsync(logoutUrl, ct).ConfigureAwait(false);
             }
         }
 
-        public async Task<bool> AuthenticateAsync(CancellationToken ct)
+        public Task<bool> AuthenticateAsync(CancellationToken ct)
+        {
+            return AuthenticateAsync(false, ct);
+        }
+
+        public async Task<bool> AuthenticateAsync(bool force, CancellationToken ct)
         {
             // https://dev.onedrive.com/auth/msa_oauth.htm
-            if (_accessCode != null)
+            if (!force && _accessCode != null)
                 return IsAuthenticated;
 
-            if (await RefreshAccessTokenAsync(ct))
+            if (await RefreshAccessTokenAsync(ct).ConfigureAwait(false))
                 return IsAuthenticated;
 
             var scope = string.Join(" ", _scopes);
@@ -77,8 +83,8 @@ namespace Meziantou.OneDrive
                 //parameters["client_secret"] = "";
                 parameters["code"] = authenticationForm.AuthorizationCode;
                 parameters["grant_type"] = "authorization_code";
-                var result = await PostAsync<OneDriveToken>("https://login.live.com/oauth20_token.srf", new FormUrlEncodedContent(parameters), ct);
-                await HandleTokenResponseAsync(result, ct);
+                var result = await PostAsync<OneDriveToken>("https://login.live.com/oauth20_token.srf", new FormUrlEncodedContent(parameters), ct).ConfigureAwait(false);
+                await HandleTokenResponseAsync(result, ct).ConfigureAwait(false);
             }
 
             return IsAuthenticated;
@@ -89,7 +95,7 @@ namespace Meziantou.OneDrive
             if (result != null && RefreshTokenHandler != null)
             {
                 var refreshTokenInfo = new RefreshTokenInfo(result.RefreshToken);
-                await RefreshTokenHandler.SaveRefreshTokenAsync(refreshTokenInfo, ct);
+                await RefreshTokenHandler.SaveRefreshTokenAsync(refreshTokenInfo, ct).ConfigureAwait(false);
             }
 
             _accessCode = result?.AccessToken;
@@ -101,7 +107,7 @@ namespace Meziantou.OneDrive
             if (RefreshTokenHandler == null)
                 return false;
 
-            var refreshToken = await RefreshTokenHandler.RetrieveRefreshTokenAsync(ct);
+            var refreshToken = await RefreshTokenHandler.RetrieveRefreshTokenAsync(ct).ConfigureAwait(false);
             if (refreshToken?.RefreshToken == null)
                 return false;
 
@@ -111,20 +117,74 @@ namespace Meziantou.OneDrive
             //parameters["client_secret"] = "";
             parameters["refresh_token"] = refreshToken.RefreshToken;
             parameters["grant_type"] = "refresh_token";
-            var result = await PostAsync<OneDriveToken>("https://login.live.com/oauth20_token.srf", new FormUrlEncodedContent(parameters), ct);
-            await HandleTokenResponseAsync(result, ct);
+            var result = await PostAsync<OneDriveToken>("https://login.live.com/oauth20_token.srf", new FormUrlEncodedContent(parameters), ct).ConfigureAwait(false);
+            await HandleTokenResponseAsync(result, ct).ConfigureAwait(false);
             return IsAuthenticated;
         }
 
-        protected virtual async Task<T> PostAsync<T>(string url, HttpContent content, CancellationToken ct)
+        private async Task<bool> HandleExceptionAsync(Exception ex, CancellationToken ct)
+        {
+            var oneDriveException = ex as OneDriveException;
+            if (oneDriveException != null)
+            {
+                if (AuthenticateOnUnauthenticatedError && oneDriveException.IsMatch(OneDriveErrorCode.Unauthenticated))
+                {
+                    return await AuthenticateAsync(true, ct); // Force re-authentication
+                }
+            }
+
+            return false;
+        }
+
+        private async Task<T> Retry<T>(Func<Task<T>> func, CancellationToken ct)
+        {
+            while (true)
+            {
+                try
+                {
+                    return await func();
+                }
+                catch (Exception ex)
+                {
+                    if (await HandleExceptionAsync(ex, ct))
+                        continue;
+
+                    throw;
+                }
+            }
+        }
+
+        private async Task Retry(Func<Task> func, CancellationToken ct)
+        {
+            while (true)
+            {
+                try
+                {
+                    await func();
+                    return;
+                }
+                catch (OneDriveException ex)
+                {
+                    if (await HandleExceptionAsync(ex, ct))
+                        continue;
+
+                    throw;
+                }
+            }
+        }
+
+        protected virtual Task<T> PostAsync<T>(string url, HttpContent content, CancellationToken ct)
         {
             EnsureHttpClient();
-            using (var result = await _client.PostAsync(url, content, ct))
+            return Retry(async () =>
             {
-                await EnsureResultAsync(result, ct);
-                var json = await result.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
-            }
+                using (var result = await _client.PostAsync(url, content, ct).ConfigureAwait(false))
+                {
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                    var json = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
+                }
+            }, ct);
         }
 
         protected virtual async Task<T> PostJsonAsync<T>(string url, object data, CancellationToken ct)
@@ -135,110 +195,104 @@ namespace Meziantou.OneDrive
 
             using (var content = new StringContent(jsonData, null, "application/json"))
             {
-                return await PostAsync<T>(url, content, ct);
+                return await PostAsync<T>(url, content, ct).ConfigureAwait(false);
             }
         }
 
-        protected virtual async Task<T> PutAsync<T>(string url, HttpContent content, CancellationToken ct)
+        protected virtual Task GetAsync(string url, CancellationToken ct)
         {
             EnsureHttpClient();
-            using (var result = await _client.PutAsync(url, content, ct))
+            return Retry(async () =>
             {
-                await EnsureResultAsync(result, ct);
-                var json = await result.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
-            }
+                using (var result = await _client.GetAsync(url, ct).ConfigureAwait(false))
+                {
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                }
+            }, ct);
         }
 
-        protected virtual async Task<T> PutJsonAsync<T>(string url, object data, CancellationToken ct)
+        protected virtual Task<T> GetAsync<T>(string url, OneDriveClientGetOptions options, CancellationToken ct)
         {
             EnsureHttpClient();
-            var jsonSerializerSettings = CreateJsonSerializerSettings();
-            var jsonData = JsonConvert.SerializeObject(data, jsonSerializerSettings);
-
-            using (var content = new StringContent(jsonData, null, "application/json"))
+            return Retry(async () =>
             {
-                return await PutAsync<T>(url, content, ct);
-            }
-        }
+                using (var result = await _client.GetAsync(url, ct).ConfigureAwait(false))
+                {
+                    if (options.HasFlag(OneDriveClientGetOptions.ReturnDefaultWhenNotFound) && result.StatusCode == HttpStatusCode.NotFound)
+                        return default(T);
 
-        protected virtual async Task GetAsync(string url, OneDriveClientGetOptions options, CancellationToken ct)
-        {
-            EnsureHttpClient();
-            using (var result = await _client.GetAsync(url, ct))
-            {
-                await EnsureResultAsync(result, ct);
-            }
-        }
-
-        protected virtual async Task<T> GetAsync<T>(string url, OneDriveClientGetOptions options, CancellationToken ct)
-        {
-            EnsureHttpClient();
-            using (var result = await _client.GetAsync(url, ct))
-            {
-                if (options.HasFlag(OneDriveClientGetOptions.ReturnDefaultWhenNotFound) && result.StatusCode == HttpStatusCode.NotFound)
-                    return default(T);
-
-                await EnsureResultAsync(result, ct);
-                var json = await result.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
-            }
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                    var json = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
+                }
+            }, ct);
         }
 
         protected virtual async Task<Stream> GetStreamAsync(string url, CancellationToken ct)
         {
             EnsureHttpClient();
-            var result = await _client.GetAsync(url, ct);
-            Stream stream = null;
-            try
+            return await Retry(async () =>
             {
-                await EnsureResultAsync(result, ct);
-                stream = await result.Content.ReadAsStreamAsync();
-            }
-            catch
-            {
-                stream?.Dispose();
-                result.Dispose();
-                throw;
-            }
+                var result = await _client.GetAsync(url, ct).ConfigureAwait(false);
+                try
+                {
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                    var stream = await result.Content.ReadAsStreamAsync().ConfigureAwait(false);
 
-            var s = new StreamWithDisposeEvents(stream);
-            s.Disposed += (sender, args) => result.Dispose();
-            return s;
+                    var s = new StreamWithDisposeEvents(stream);
+                    s.Disposed += (sender, args) => result?.Dispose();
+                    return s;
+                }
+                catch
+                {
+                    result.Dispose();
+                    result = null;
+                    throw;
+                }
+            }, ct);
         }
 
-        protected virtual async Task<T> PutStreamAsync<T>(string url, Stream content, CancellationToken ct)
+        protected virtual Task<T> PutStreamAsync<T>(string url, Stream content, CancellationToken ct)
         {
             EnsureHttpClient();
-            using (var sc = new StreamContent(content))
+            return Retry(async () =>
             {
-                using (var result = await _client.PutAsync(url, sc, ct))
+                using (var sc = new StreamContent(content))
                 {
-                    await EnsureResultAsync(result, ct);
-                    var json = await result.Content.ReadAsStringAsync();
+                    using (var result = await _client.PutAsync(url, sc, ct).ConfigureAwait(false))
+                    {
+                        await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                        var json = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
+                    }
+                }
+            }, ct);
+        }
+
+        protected virtual Task<T> DeleteAsync<T>(string url, CancellationToken ct)
+        {
+            EnsureHttpClient();
+            return Retry(async () =>
+            {
+                using (var result = await _client.DeleteAsync(url, ct).ConfigureAwait(false))
+                {
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                    var json = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                     return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
                 }
-            }
+            }, ct);
         }
 
-        protected virtual async Task<T> DeleteAsync<T>(string url, CancellationToken ct)
+        protected virtual Task DeleteAsync(string url, CancellationToken ct)
         {
             EnsureHttpClient();
-            using (var result = await _client.DeleteAsync(url, ct))
+            return Retry(async () =>
             {
-                await EnsureResultAsync(result, ct);
-                var json = await result.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(json, CreateJsonSerializerSettings());
-            }
-        }
-
-        protected virtual async Task DeleteAsync(string url, CancellationToken ct)
-        {
-            EnsureHttpClient();
-            using (var result = await _client.DeleteAsync(url, ct))
-            {
-                await EnsureResultAsync(result, ct);
-            }
+                using (var result = await _client.DeleteAsync(url, ct).ConfigureAwait(false))
+                {
+                    await EnsureResultAsync(result, ct).ConfigureAwait(false);
+                }
+            }, ct);
         }
 
         protected virtual JsonSerializerSettings CreateJsonSerializerSettings()
@@ -263,17 +317,23 @@ namespace Meziantou.OneDrive
             {
                 try
                 {
+                    Error error = null;
                     string content = null;
                     if (message.Content != null)
                     {
-                        content = await message.Content.ReadAsStringAsync();
+                        content = await message.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        if (content != null)
+                        {
+                            var settings = CreateJsonSerializerSettings();
+                            error = JsonConvert.DeserializeObject<ErrorResponse>(content, settings)?.Error;
+                        }
                     }
 
-                    throw new Exception($"Code: {message.StatusCode}; Reason: {message.ReasonPhrase}; Content: " + content);
+                    throw new OneDriveException(error, content);
                 }
                 finally
                 {
-                    message?.Content?.Dispose();
+                    message.Content?.Dispose();
                 }
             }
         }
@@ -296,6 +356,7 @@ namespace Meziantou.OneDrive
         protected virtual HttpClient CreateHttpClient()
         {
             var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromMinutes(10);
             httpClient.BaseAddress = new Uri(ApiUrl);
             UpdateCrendentials(httpClient);
             return httpClient;
@@ -315,31 +376,31 @@ namespace Meziantou.OneDrive
         {
             if (length <= chunckSize)
             {
-                return await PutStreamAsync<OneDriveItem>($"drive/items/{parent.Id}:/{fileName}:/content", content, ct);
+                return await PutStreamAsync<OneDriveItem>($"drive/items/{parent.Id}:/{fileName}:/content", content, ct).ConfigureAwait(false);
             }
 
             // https://dev.onedrive.com/items/upload_large_files.htm
-            var session = await PostAsync<ChunkedUploadSessionResult>($"drive/items/{parent.Id}:/{fileName}:/upload.createSession", null, ct);
+            var session = await PostAsync<ChunkedUploadSessionResult>($"drive/items/{parent.Id}:/{fileName}:/upload.createSession", null, ct).ConfigureAwait(false);
             long rangeFrom = 0;
             var bytes = new byte[chunckSize];
             int read;
-            while ((read = await content.ReadAsync(bytes, 0, chunckSize, ct)) > 0)
+            while ((read = await content.ReadAsync(bytes, 0, chunckSize, ct).ConfigureAwait(false)) > 0)
             {
-                using (var byteArrayContent = new ByteArrayContent(bytes, 0, read))
+                int attempt = 1;
+                while (true)
                 {
-                    int attempt = 1;
-                    while (true)
+                    using (var byteArrayContent = new ByteArrayContent(bytes, 0, read))
                     {
                         long rangeTo = rangeFrom + read - 1;
                         try
                         {
                             byteArrayContent.Headers.ContentRange = new ContentRangeHeaderValue(rangeFrom, rangeTo, length);
-                            using (var result = await _client.PutAsync(session.UploadUrl, byteArrayContent, ct))
+                            using (var result = await _client.PutAsync(session.UploadUrl, byteArrayContent, ct).ConfigureAwait(false))
                             {
-                                await EnsureResultAsync(result, ct);
+                                await EnsureResultAsync(result, ct).ConfigureAwait(false);
                                 if (result.StatusCode == HttpStatusCode.Created || result.StatusCode == HttpStatusCode.OK)
                                 {
-                                    var json = await result.Content.ReadAsStringAsync();
+                                    var json = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                                     return JsonConvert.DeserializeObject<OneDriveItem>(json, CreateJsonSerializerSettings());
                                 }
                             }
@@ -348,6 +409,9 @@ namespace Meziantou.OneDrive
                         }
                         catch (Exception ex)
                         {
+                            if (await HandleExceptionAsync(ex, ct))
+                                continue;
+
                             if (chunkErrorHandler != null)
                             {
                                 var args = new ChunkUploadErrorEventArgs(this, parent, ex, bytes, rangeFrom, rangeTo, attempt);
@@ -406,11 +470,11 @@ namespace Meziantou.OneDrive
             {
                 if (string.IsNullOrEmpty(path))
                 {
-                    item = await GetRootFolderAsync(ct);
+                    item = await GetRootFolderAsync(ct).ConfigureAwait(false);
                 }
                 else
                 {
-                    item = await GetItemAsync(path, ct);
+                    item = await GetItemAsync(path, ct).ConfigureAwait(false);
                 }
 
                 if (item != null)
@@ -427,7 +491,7 @@ namespace Meziantou.OneDrive
             while (parts.Any())
             {
                 var part = parts.Pop();
-                item = await CreateDirectoryAsync(item, part, ct);
+                item = await CreateDirectoryAsync(item, part, ct).ConfigureAwait(false);
             }
 
             return item;
@@ -447,7 +511,7 @@ namespace Meziantou.OneDrive
 
             while (!string.IsNullOrEmpty(url))
             {
-                var nextItems = await GetAsync<PagedResponse<OneDriveItem>>(url, OneDriveClientGetOptions.None, ct);
+                var nextItems = await GetAsync<PagedResponse<OneDriveItem>>(url, OneDriveClientGetOptions.None, ct).ConfigureAwait(false);
                 items.AddRange(nextItems.Value);
                 url = nextItems.NextLink;
             }

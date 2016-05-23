@@ -34,7 +34,8 @@ Configuration:
 Configuration:
 
 - `Path`: Path from the root of the user's root path. The directory is created if needed. Example: `/Backup/Musics/`
-- `Configuration-ApplicationName` (optional): This allows to store the credential (Refresh token) in the [Windows Credential Manager](http://windows.microsoft.com/en-us/windows7/what-is-credential-manager) so you don't need to enter your credential every time. Use a different name for different OneDrive account. The name is not related to your OneDrive account.
+- `Configuration-ApplicationName` (optional, default `null`): This allows to store the credential (Refresh token) in the [Windows Credential Manager](http://windows.microsoft.com/en-us/windows7/what-is-credential-manager) so you don't need to enter your credential every time. Use a different name for different OneDrive account. The name is not related to your OneDrive account.
+- `Configuration-AuthenticateOnUnauthenticatedError` (optional, default `true`): Re-authenticate when the API call fails with error code `Unauthenticated`
 
 # Examples
 

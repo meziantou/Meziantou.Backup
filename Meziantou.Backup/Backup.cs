@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,24 +17,21 @@ namespace Meziantou.Backup
         public bool CanCreateFiles { get; set; } = true;
         public bool CanDeleteDirectories { get; set; } = false;
         public bool CanCreateDirectories { get; set; } = true;
-        public int MaxDegreeOfParallelism { get; set; }
         public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
-
-        private BlockingCollection<Func<Task>> _blockingCollection;
-        private long _remaingDirectories = 0;
+        public event EventHandler<FileCopyingEventArgs> Copying;
 
         private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
         {
             var authenticable = fileSystem as IAuthenticable;
             if (authenticable != null)
             {
-                await authenticable.LogInAsync(ct);
+                await authenticable.LogInAsync(ct).ConfigureAwait(false);
             }
 
-            return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct);
+            return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct).ConfigureAwait(false);
         }
 
         public async Task RunAsync(ProviderConfiguration source, ProviderConfiguration target, CancellationToken ct)
@@ -48,59 +44,28 @@ namespace Meziantou.Backup
             var sourceProvider = source.CreateProvider();
             var targetProvider = target.CreateProvider();
 
-            var directories = await Task.WhenAll(
-               GetOrCreateRootDirectoryItemAsync(sourceProvider, source.Path, ct),
-               GetOrCreateRootDirectoryItemAsync(targetProvider, target.Path, ct)
-            );
+            var sourceDir = await GetOrCreateRootDirectoryItemAsync(sourceProvider, source.Path, ct).ConfigureAwait(false);
+            var targetDir = await GetOrCreateRootDirectoryItemAsync(targetProvider, target.Path, ct).ConfigureAwait(false);
 
-            Run(directories[0], directories[1], ct);
+            await RunAsync(sourceDir, targetDir, ct).ConfigureAwait(false);
         }
 
-        public void Run(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        public Task RunAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            _blockingCollection = new BlockingCollection<Func<Task>>();
-
-            IncrementCounter();
-            EnqueueSynchronize(source, target, ct);
-
-            var parallelOptions = new ParallelOptions();
-            parallelOptions.CancellationToken = ct;
-            if (MaxDegreeOfParallelism > 0)
-            {
-                parallelOptions.MaxDegreeOfParallelism = MaxDegreeOfParallelism;
-            }
-
-            // Use ConcurrentQueue to enable safe enqueueing from multiple threads.
-            var exceptions = new ConcurrentQueue<Exception>();
-            Parallel.ForEach(_blockingCollection.GetConsumingPartitioner(ct), parallelOptions, async item =>
-            {
-                if (item == null) throw new ArgumentNullException(nameof(item));
-
-                try
-                {
-                    await item();
-                }
-                catch (Exception ex)
-                {
-                    exceptions.Enqueue(ex);
-                }
-            });
-
-            if (exceptions.Count > 0)
-                throw new AggregateException(exceptions);
+            return SynchronizeAsync(source, target, ct);
         }
 
-        private async Task<T> RetryAsync<T>(Func<Task<T>> action)
+        private async Task<T> RetryAsync<T>(Func<Task<T>> action, CancellationToken ct)
         {
             int count = 0;
             while (true)
             {
                 try
                 {
-                    return await action();
+                    return await action().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -111,17 +76,19 @@ namespace Meziantou.Backup
                     if (!OnError(new BackupErrorEventArgs(ex, count)))
                         throw;
                 }
+
+                await Task.Delay(1000, ct);
             }
         }
 
-        private async Task RetryAsync(Func<Task> action)
+        private async Task RetryAsync(Func<Task> action, CancellationToken ct)
         {
             int count = 0;
             while (true)
             {
                 try
                 {
-                    await action();
+                    await action().ConfigureAwait(false);
                     return;
                 }
                 catch (Exception ex)
@@ -136,46 +103,46 @@ namespace Meziantou.Backup
             }
         }
 
-        protected virtual async Task<bool> AreEqualAsync(IFileInfo source, IFileInfo target, CancellationToken ct)
+        protected virtual async Task<FileInfoEqualityMethods> AreEqualAsync(IFileInfo source, IFileInfo target, CancellationToken ct)
         {
             if (source == null && target == null)
-                return true;
+                return FileInfoEqualityMethods.None;
 
             if (source == null || target == null)
-                return false;
+                return FileInfoEqualityMethods.None;
 
             if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Length))
             {
                 if (source.Length != target.Length)
-                    return false;
+                    return FileInfoEqualityMethods.Length;
             }
 
             if (EqualityMethods.HasFlag(FileInfoEqualityMethods.LastWriteTime))
             {
                 if (source.LastWriteTimeUtc > target.LastWriteTimeUtc)
-                    return false;
+                    return FileInfoEqualityMethods.LastWriteTime;
             }
 
             // Use content or hash, not both (useless)
             if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Content))
             {
-                using (var xStream = await source.OpenReadAsync(ct))
-                using (var yStream = await target.OpenReadAsync(ct))
+                using (var xStream = await source.OpenReadAsync(ct).ConfigureAwait(false))
+                using (var yStream = await target.OpenReadAsync(ct).ConfigureAwait(false))
                 {
                     byte[] xBuffer = new byte[81920];
                     byte[] yBuffer = new byte[81920];
                     var xTask = xStream.ReadAsync(xBuffer, 0, xBuffer.Length, ct);
                     var yTask = yStream.ReadAsync(yBuffer, 0, yBuffer.Length, ct);
-                    var xRead = await xTask;
-                    var yRead = await yTask;
+                    var xRead = await xTask.ConfigureAwait(false);
+                    var yRead = await yTask.ConfigureAwait(false);
 
                     if (xRead != yRead)
-                        return false;
+                        return FileInfoEqualityMethods.Content;
 
                     for (int i = 0; i < xRead; i++)
                     {
                         if (xBuffer[i] != yBuffer[i])
-                            return false;
+                            return FileInfoEqualityMethods.Content;
                     }
                 }
             }
@@ -184,22 +151,23 @@ namespace Meziantou.Backup
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256) ||
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
             {
-                using (var xStream = await source.OpenReadAsync(ct))
-                using (var yStream = await target.OpenReadAsync(ct))
+                using (var xStream = await source.OpenReadAsync(ct).ConfigureAwait(false))
+                using (var yStream = await target.OpenReadAsync(ct).ConfigureAwait(false))
                 {
                     var xHashTask = ComputeHashAsync(xStream, ct);
                     var yHashTask = ComputeHashAsync(yStream, ct);
-                    var xHash = await xHashTask;
-                    var yHash = await yHashTask;
-                    if (xHash.Zip(yHash, (a, b) => AreSame(a.Item2, b.Item2)).Any(areSame => areSame == false))
-                        return false;
+                    var xHash = await xHashTask.ConfigureAwait(false);
+                    var yHash = await yHashTask.ConfigureAwait(false);
+                    var diff = xHash.Zip(yHash, (a, b) => AreEqual(a.Item2, b.Item2) ? FileInfoEqualityMethods.None : a.Item1).FirstOrDefault(_ => _ != FileInfoEqualityMethods.None);
+                    if (diff != FileInfoEqualityMethods.None)
+                        return diff;
                 }
             }
 
-            return true;
+            return FileInfoEqualityMethods.None;
         }
 
-        private static bool AreSame(byte[] a, byte[] b)
+        private static bool AreEqual(byte[] a, byte[] b)
         {
             if (a == null && b == null)
                 return true;
@@ -239,7 +207,7 @@ namespace Meziantou.Backup
 
                 byte[] buffer = new byte[81920];
                 int read;
-                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
                 {
                     foreach (var hashAlgorithm in algorithms)
                     {
@@ -258,31 +226,28 @@ namespace Meziantou.Backup
             }
         }
 
-        private void EnqueueTask(Func<Task> action, CancellationToken ct)
+        private async Task<IFileInfo> CopyFileAsync(IDirectoryInfo directory, IFileInfo file, CancellationToken ct)
         {
-            _blockingCollection.Add(action, ct);
-        }
+            if (directory == null) throw new ArgumentNullException(nameof(directory));
+            if (file == null) throw new ArgumentNullException(nameof(file));
 
-        private void EnqueueSynchronize(IDirectoryInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
-        {
-            EnqueueTask(async () =>
+            using (var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false))
             {
-                await SynchronizeAsync(sourceItem, targetItem, ct);
-                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, sourceItem, targetItem));
-            }, ct);
+                using (var progressStream = new ProgressStream(inputStream, true))
+                {
+                    long currentPosition = 0;
+                    progressStream.StreamRead += (sender, args) =>
+                    {
+                        currentPosition += args.Count;
+                        OnCopying(new FileCopyingEventArgs(file, directory, currentPosition, file.Length));
+                    };
+
+                    return await directory.CreateFileAsync(file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
+                }
+            }
         }
 
-        private void IncrementCounter()
-        {
-            Interlocked.Increment(ref _remaingDirectories);
-        }
-
-        private void DecrementCounter()
-        {
-            Interlocked.Decrement(ref _remaingDirectories);
-        }
-
-        private void EnqueueCreateItem(IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        private async Task CreateItemAsync(IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
         {
             var file = sourceItem as IFileInfo;
             if (file != null)
@@ -292,11 +257,8 @@ namespace Meziantou.Backup
                     if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceItem, targetItem)))
                         return;
 
-                    EnqueueTask(async () =>
-                    {
-                        var fi = await RetryAsync(() => targetItem.CopyFileAsync(file, ct));
-                        OnAction(new BackupActionEventArgs(BackupAction.Created, file, fi));
-                    }, ct);
+                    var fi = await RetryAsync(() => CopyFileAsync(targetItem, file, ct), ct).ConfigureAwait(false);
+                    OnAction(new BackupActionEventArgs(BackupAction.Created, file, fi));
                 }
             }
             else
@@ -309,36 +271,29 @@ namespace Meziantou.Backup
                         if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceDirectory, targetItem)))
                             return;
 
-                        IncrementCounter();
-                        EnqueueTask(async () =>
-                        {
-                            var di = await RetryAsync(() => targetItem.CreateDirectoryAsync(sourceDirectory.Name, ct));
-                            OnAction(new BackupActionEventArgs(BackupAction.Created, sourceItem, di));
+                        var di = await RetryAsync(() => targetItem.CreateDirectoryAsync(sourceDirectory.Name, ct), ct).ConfigureAwait(false);
+                        OnAction(new BackupActionEventArgs(BackupAction.Created, sourceItem, di));
 
-                            // Continue synchonization
-                            EnqueueSynchronize(sourceDirectory, di, ct);
-                        }, ct);
+                        // Continue synchonization of the new directory
+                        await SynchronizeAsync(sourceDirectory, di, ct).ConfigureAwait(false);
                     }
                 }
             }
         }
 
-        private void EnqueueUpdateItem(IFileInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        private async Task UpdateItemAsync(IFileInfo sourceItem, IDirectoryInfo targetItem, FileInfoEqualityMethods diff, CancellationToken ct)
         {
             if (CanUpdateFiles)
             {
-                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem)))
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem, diff)))
                     return;
 
-                EnqueueTask(async () =>
-                {
-                    var fi = await RetryAsync(() => targetItem.CopyFileAsync(sourceItem, ct));
-                    OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceItem, fi));
-                }, ct);
+                var fi = await RetryAsync(() => CopyFileAsync(targetItem, sourceItem, ct), ct).ConfigureAwait(false);
+                OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceItem, fi, diff));
             }
         }
 
-        private void EnqueueDeleteItem(IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
+        private async Task DeleteItemAsync(IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
         {
             var file = targetItem as IFileInfo;
             if (file != null)
@@ -348,11 +303,8 @@ namespace Meziantou.Backup
                     if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
                         return;
 
-                    EnqueueTask(async () =>
-                    {
-                        await RetryAsync(() => targetItem.DeleteAsync(ct));
-                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
-                    }, ct);
+                    await RetryAsync(() => targetItem.DeleteAsync(ct), ct).ConfigureAwait(false);
+                    OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
                 }
             }
             else
@@ -365,11 +317,8 @@ namespace Meziantou.Backup
                         if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
                             return;
 
-                        EnqueueTask(async () =>
-                        {
-                            await RetryAsync(() => directory.DeleteAsync(ct));
-                            OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
-                        }, ct);
+                        await RetryAsync(() => directory.DeleteAsync(ct), ct).ConfigureAwait(false);
+                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
                     }
                 }
             }
@@ -385,8 +334,9 @@ namespace Meziantou.Backup
             if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, source, target)))
                 return;
 
-            var sourceItems = await RetryAsync(() => source.GetItemsAsync(ct));
-            var targetItems = await RetryAsync(() => target.GetItemsAsync(ct));
+            // Clone collections because CreateItem or DeleteItem may change them
+            var sourceItems = (await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false)).ToList();
+            var targetItems = (await RetryAsync(() => target.GetItemsAsync(ct), ct).ConfigureAwait(false)).ToList();
 
             //
             // Compute differencies
@@ -399,7 +349,7 @@ namespace Meziantou.Backup
                 var targetItem = targetItems.Get(sourceItem);
                 if (targetItem == null)
                 {
-                    EnqueueCreateItem(sourceItem, target, ct);
+                    await CreateItemAsync(sourceItem, target, ct).ConfigureAwait(false);
                     continue;
                 }
 
@@ -407,9 +357,10 @@ namespace Meziantou.Backup
                 var targetFileItem = targetItem as IFileInfo;
                 if (sourceFileItem != null && targetFileItem != null)
                 {
-                    if (!await AreEqualAsync(sourceFileItem, targetFileItem, ct))
+                    var diff = await AreEqualAsync(sourceFileItem, targetFileItem, ct).ConfigureAwait(false);
+                    if (diff != FileInfoEqualityMethods.None)
                     {
-                        EnqueueUpdateItem(sourceFileItem, target, ct);
+                        await UpdateItemAsync(sourceFileItem, target, diff, ct).ConfigureAwait(false);
                         continue;
                     }
                 }
@@ -421,7 +372,7 @@ namespace Meziantou.Backup
             {
                 if (sourceItems.Get(targetItem) == null)
                 {
-                    EnqueueDeleteItem(source, targetItem, ct);
+                    await DeleteItemAsync(source, targetItem, ct).ConfigureAwait(false);
                 }
             }
 
@@ -435,15 +386,8 @@ namespace Meziantou.Backup
                 var targetDirectory = targetItems.Get(directory) as IDirectoryInfo;
                 if (targetDirectory != null)
                 {
-                    IncrementCounter();
-                    EnqueueSynchronize(directory, targetDirectory, ct);
+                    await SynchronizeAsync(directory, targetDirectory, ct).ConfigureAwait(false);
                 }
-            }
-
-            DecrementCounter();
-            if (_remaingDirectories == 0)
-            {
-                _blockingCollection.CompleteAdding();
             }
         }
 
@@ -461,6 +405,11 @@ namespace Meziantou.Backup
 
             Error?.Invoke(this, e);
             return !e.Cancel;
+        }
+
+        protected virtual void OnCopying(FileCopyingEventArgs e)
+        {
+            Copying?.Invoke(this, e);
         }
 
         private class HashResult : IDisposable
