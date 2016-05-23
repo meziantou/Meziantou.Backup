@@ -1,6 +1,6 @@
 # About `Meziantou.Backup`
 
-Allows to backup your files from a source to a destination.
+Allows you to copy your files from a source to a destination.
 For instance you can save your local files to your OneDrive account or an external disk.
 
 # Usage
