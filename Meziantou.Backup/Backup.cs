@@ -100,6 +100,8 @@ namespace Meziantou.Backup
                     if (!OnError(new BackupErrorEventArgs(ex, count)))
                         throw;
                 }
+
+                await Task.Delay(1000, ct);
             }
         }
 
