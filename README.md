@@ -1,7 +1,7 @@
 # About `Meziantou.Backup`
 
-Allows you to copy your files from a source to a destination.
-For instance you can save your local files to your OneDrive account or an external disk.
+Copy your files from a source to a destination.
+For instance you can copy your local files to your OneDrive account or an external disk.
 
 # Usage
 
@@ -13,14 +13,13 @@ Meziantou.Backup.Console.exe
     targetProviderName=<provider name>
     targetPath=<path>
     targetConfiguration-<name>=<value>
-    EqualityMethods=Length
 ```
 
 - `ProviderName`: Currently it supports `FileSystem` and `OneDrive`
 - `Path`: Path to the directory to synchronize
 - `Configuration-<name>`: Key-Value to configure the provider
 - `EqualityMethods` (optional, default: `LastWriteTime | Length`): Methods to compare two files. Valid values: `Length`, `LastWriteTime`, `Content`, `ContentMd5`, `ContentSha1`, `ContentSha256`, `ContentSha512`
-- `RetryCount` (optional, default: `3`): Number of attemnts to execute a file operation
+- `RetryCount` (optional, default: `3`): Number of attempts to execute a file operation
 - `CanCreateDirectories` (optional, default: `true`)
 - `CanDeleteDirectories` (optional, default: `false`)
 - `CanCreateFiles` (optional, default: `true`)
