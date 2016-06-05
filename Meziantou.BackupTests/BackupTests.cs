@@ -19,13 +19,10 @@ namespace Meziantou.BackupTests
 
             var targetProvider = new InMemoryFileSystem();
 
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
             var backup = new Backup.Backup();
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             Assert.IsTrue(targetProvider.HasItem("item.png"));
@@ -39,15 +36,12 @@ namespace Meziantou.BackupTests
 
             var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png");
-
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
+            
             var backup = new Backup.Backup();
             backup.CanDeleteFiles = true;
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             Assert.IsFalse(targetProvider.HasItem("item.png"));
@@ -70,14 +64,11 @@ namespace Meziantou.BackupTests
             targetProvider.AddItem("Sample/item2.png");
             targetProvider.AddItem("Sample/item4.png");
             targetProvider.AddItem("Sample/sub1/item1");
-
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
+            
             var backup = new Backup.Backup();
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
@@ -99,13 +90,10 @@ namespace Meziantou.BackupTests
             var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png", new byte[] { 1, 2, 3 });
 
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
             var backup = new Backup.Backup();
             
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             Assert.AreEqual(2, targetProvider.GetFile("item.png").Length); // Default comparison use length
@@ -121,14 +109,11 @@ namespace Meziantou.BackupTests
             var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png", new byte[] { 1, 2, 3 });
 
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.Content;
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             Assert.AreEqual(2, targetProvider.GetFile("item.png").Length);
@@ -151,14 +136,11 @@ namespace Meziantou.BackupTests
 
             targetProvider.AddItem("item.png", targetFileContent);
 
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.ContentMd5;
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             CollectionAssert.AreEqual(targetFileContent, targetProvider.GetFile("item.png").Content);
@@ -181,14 +163,11 @@ namespace Meziantou.BackupTests
 
             targetProvider.AddItem("item.png", targetFileContent);
 
-            var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
-            var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
-
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.ContentMd5 | FileInfoEqualityMethods.ContentSha1;
 
             // Act
-            backup.RunAsync(sourceProviderConfiguration, targetProviderConfiguration, CancellationToken.None).Wait();
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
             CollectionAssert.AreEqual(sourceFileContent, targetProvider.GetFile("item.png").Content);

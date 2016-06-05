@@ -22,7 +22,18 @@ namespace Meziantou.Backup
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
         public event EventHandler<FileCopyingEventArgs> Copying;
-        
+
+        public async Task RunAsync(IFileSystem source, IFileSystem target, CancellationToken ct)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
+
+            var sourceDirectory = await source.GetOrCreateDirectoryItemAsync("/", ct);
+            var targetDirectory = await target.GetOrCreateDirectoryItemAsync("/", ct);
+
+            await SynchronizeAsync(sourceDirectory, targetDirectory, ct);
+        }
+
         public Task RunAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
