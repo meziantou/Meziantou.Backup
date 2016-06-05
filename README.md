@@ -20,6 +20,7 @@ Meziantou.Backup.Console.exe
 - `Configuration-<name>`: Key-Value to configure the provider
 - `EqualityMethods` (optional, default: `LastWriteTime | Length`): Methods to compare two files. Valid values: `Length`, `LastWriteTime`, `Content`, `ContentMd5`, `ContentSha1`, `ContentSha256`, `ContentSha512`
 - `RetryCount` (optional, default: `3`): Number of attempts to execute a file operation
+- `ContinueOnError` (optional, default: `true`)
 - `CanCreateDirectories` (optional, default: `true`)
 - `CanDeleteDirectories` (optional, default: `false`)
 - `CanCreateFiles` (optional, default: `true`)

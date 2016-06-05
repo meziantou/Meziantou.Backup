@@ -12,6 +12,7 @@ namespace Meziantou.Backup
     public class Backup
     {
         public int RetryCount { get; set; } = 3;
+        public bool ContinueOnError { get; set; } = true;
         public bool CanDeleteFiles { get; set; } = false;
         public bool CanUpdateFiles { get; set; } = true;
         public bool CanCreateFiles { get; set; } = true;
@@ -54,11 +55,15 @@ namespace Meziantou.Backup
                 catch (Exception ex)
                 {
                     count++;
-                    if (count > RetryCount)
-                        throw;
+                    if (count > RetryCount || !OnError(new BackupErrorEventArgs(ex, count)))
+                    {
+                        if (ContinueOnError)
+                        {
+                            return default(T);
+                        }
 
-                    if (!OnError(new BackupErrorEventArgs(ex, count)))
                         throw;
+                    }
                 }
 
                 await Task.Delay(1000, ct);
@@ -78,11 +83,13 @@ namespace Meziantou.Backup
                 catch (Exception ex)
                 {
                     count++;
-                    if (count > RetryCount)
-                        throw;
+                    if (count > RetryCount || !OnError(new BackupErrorEventArgs(ex, count)))
+                    {
+                        if (ContinueOnError)
+                            return;
 
-                    if (!OnError(new BackupErrorEventArgs(ex, count)))
                         throw;
+                    }
                 }
 
                 await Task.Delay(1000, ct);
@@ -322,11 +329,19 @@ namespace Meziantou.Backup
 
             if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, source, target)))
                 return;
+            
+            var sourceItemsResult = await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false);
+            if (sourceItemsResult == null)
+                return;
+
+            var targetItemResult = await RetryAsync(() => target.GetItemsAsync(ct), ct).ConfigureAwait(false);
+            if (targetItemResult == null)
+                return;
 
             // Clone collections because CreateItem or DeleteItem may change them
-            var sourceItems = (await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false)).ToList();
-            var targetItems = (await RetryAsync(() => target.GetItemsAsync(ct), ct).ConfigureAwait(false)).ToList();
-
+            var sourceItems = sourceItemsResult.ToList();
+            var targetItems = targetItemResult.ToList();
+            
             //
             // Compute differencies
             //

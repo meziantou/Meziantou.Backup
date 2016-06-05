@@ -102,6 +102,7 @@ namespace Meziantou.Backup.Console
                 backup.CanCreateFiles = GetValue(configuration, "CanCreateFiles", true);
                 backup.CanUpdateFiles = GetValue(configuration, "CanUpdateFiles", true);
                 backup.CanDeleteFiles = GetValue(configuration, "CanDeleteFiles", false);
+                backup.ContinueOnError = GetValue(configuration, "ContinueOnError", true);
 
                 var summary = new BackupSummary(backup);
 
@@ -124,6 +125,8 @@ namespace Meziantou.Backup.Console
                 System.Console.WriteLine("  Created: " + summary.FileCreatedCount);
                 System.Console.WriteLine("  Updated: " + summary.FileUpdatedCount);
                 System.Console.WriteLine("  Deleted: " + summary.FileDeletedCount);
+
+                System.Console.WriteLine("Errors: " + summary.ErrorCount);
             }
         }
 
@@ -278,13 +281,30 @@ namespace Meziantou.Backup.Console
 
         private void Backup_Action(object sender, BackupActionEventArgs e)
         {
+            // Filter some actions...
+            if (e.Action == BackupAction.Synchronized ||
+                e.Action == BackupAction.Created ||
+                e.Action == BackupAction.Updated ||
+                e.Action == BackupAction.Deleted)
+                return;
+
+            if (e.Action == BackupAction.Synchronizing && e.SourceItem.IsFile())
+                return;
+
             if (e.Method != FileInfoEqualityMethods.None)
             {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}): <{GetDisplayName(e.SourceItem)}> -> <{GetDisplayName(e.TargetItem)}>");
+                if (e.SourceItem.IsFile() && e.Method == FileInfoEqualityMethods.Length)
+                {
+                    System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}: {((IFileInfo)e.SourceItem).Length}-{((IFileInfo)e.TargetItem).Length}): \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
+                }
+                else
+                {
+                    System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}): \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
+                }
             }
             else
             {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action}: <{GetDisplayName(e.SourceItem)}> -> <{GetDisplayName(e.TargetItem)}>");
+                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action}: \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
             }
         }
 

@@ -13,12 +13,19 @@ namespace Meziantou.Backup.Console
         private int _fileUpdatedCount;
         private int _fileCreatedCount;
         private int _fileCount;
+        private int _errorCount;
 
         public BackupSummary(Backup backup)
         {
             if (backup == null) throw new ArgumentNullException(nameof(backup));
 
             backup.Action += Backup_Action;
+            backup.Error += Backup_Error;
+        }
+
+        private void Backup_Error(object sender, BackupErrorEventArgs e)
+        {
+            Interlocked.Increment(ref _errorCount);
         }
 
         private void Backup_Action(object sender, BackupActionEventArgs e)
@@ -72,5 +79,6 @@ namespace Meziantou.Backup.Console
         public int FileCreatedCount => _fileCreatedCount;
         public int FileUpdatedCount => _fileUpdatedCount;
         public int FileDeletedCount => _fileDeletedCount;
+        public int ErrorCount => _errorCount;
     }
 }
