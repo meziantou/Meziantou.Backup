@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Meziantou.BackupTests")]
+[assembly: AssemblyTitle("Meziantou.Backup.FileSystem.InMemory")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Meziantou.BackupTests")]
+[assembly: AssemblyProduct("Meziantou.Backup.FileSystem.InMemory")]
 [assembly: AssemblyCopyright("Copyright © Meziantou 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("3683f4e9-3a7a-4abb-a5f3-1d6264f14cf6")]
+[assembly: Guid("ba0173c4-174e-47cd-af71-c832ac402877")]
 
 // Version information for an assembly consists of the following four values:
 //

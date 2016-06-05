@@ -22,8 +22,6 @@ namespace Meziantou.Backup.FileSystem.Physical
         public abstract bool IsDirectory { get; }
         public string Name => _fsi.Name;
         public string FullName => _fsi.FullName;
-        public string Extension => _fsi.Extension;
-        public bool Exists => _fsi.Exists;
         public DateTime CreationTimeUtc => _fsi.CreationTimeUtc;
         public DateTime LastWriteTimeUtc => _fsi.LastWriteTimeUtc;
 

@@ -50,11 +50,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="InMemoryFileSystem\FileSystem.cs" />
+    <Compile Include="AesFileSystemTests.cs" />
     <Compile Include="BackupTests.cs" />
-    <Compile Include="InMemoryFileSystem\InMemoryDirectoryInfo.cs" />
-    <Compile Include="InMemoryFileSystem\InMemoryFileInfo.cs" />
-    <Compile Include="InMemoryFileSystem\InMemoryFileSystemInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -62,11 +59,20 @@
       <Project>{afd9ff00-6a97-48e6-9ddb-c009dd93c280}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj">
+      <Project>{77EADFED-A380-42AB-AE56-71A96CA00F34}</Project>
+      <Name>Meziantou.Backup.FileSystem.Aes</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.InMemory\Meziantou.Backup.FileSystem.InMemory.csproj">
+      <Project>{ba0173c4-174e-47cd-af71-c832ac402877}</Project>
+      <Name>Meziantou.Backup.FileSystem.InMemory</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj">
       <Project>{38a57b27-bf39-44e8-84e6-c011988b4218}</Project>
       <Name>Meziantou.Backup</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

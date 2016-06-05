@@ -24,19 +24,6 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         public string Name => _item.Name;
 
         public bool IsDirectory => _item.Folder != null;
-
-        public string Extension
-        {
-            get
-            {
-                if (_item.File != null)
-                    return Path.GetExtension(Name);
-
-                return null;
-            }
-        }
-
-        public bool Exists => true;
         public DateTime CreationTimeUtc => _item.CreatedDateTime;
         public DateTime LastWriteTimeUtc => _item.LastModifiedDateTime;
         public long Length => _item.Size;
@@ -73,7 +60,6 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         private bool OnChunkErrorHandler(ChunkUploadErrorEventArgs chunkUploadErrorEventArgs)
         {
             return chunkUploadErrorEventArgs.AttemptCount < 3; // Retry 3 times
-
         }
 
         public async Task<IDirectoryInfo> CreateDirectoryAsync(string name, CancellationToken ct)

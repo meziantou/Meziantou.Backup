@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 
-namespace Meziantou.BackupTests.InMemoryFileSystem
+namespace Meziantou.Backup.FileSystem.InMemory
 {
-    internal class InMemoryDirectoryInfo : InMemoryFileSystemInfo, IDirectoryInfo
+    public class InMemoryDirectoryInfo : InMemoryFileSystemInfo, IDirectoryInfo
     {
         private StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
 

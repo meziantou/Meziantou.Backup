@@ -17,10 +17,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
 
             if (x.IsDirectory != y.IsDirectory)
                 return false;
-
-            if (x.Exists != y.Exists)
-                return false;
-
+            
             if (!string.Equals(x.Name, y.Name, StringComparison))
                 return false;
 

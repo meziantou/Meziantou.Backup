@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Meziantou.Backup;
-using Meziantou.BackupTests.InMemoryFileSystem;
+using Meziantou.Backup.FileSystem.InMemory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.BackupTests
@@ -14,10 +14,10 @@ namespace Meziantou.BackupTests
         public void TestMethod1()
         {
             // Arrange
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("item.png");
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
 
             var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
             var targetProviderConfiguration = new ProviderConfiguration { Provider = targetProvider };
@@ -35,9 +35,9 @@ namespace Meziantou.BackupTests
         public void TestMethod2()
         {
             // Arrange
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png");
 
             var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
@@ -57,7 +57,7 @@ namespace Meziantou.BackupTests
         public void TestMethod3()
         {
             // Arrange
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("Sample/item.png");
             sourceProvider.AddItem("Sample/item2.png");
             sourceProvider.AddItem("Sample/item3.png");
@@ -65,7 +65,7 @@ namespace Meziantou.BackupTests
             sourceProvider.AddItem("Sample/sub1/item1.txt");
             sourceProvider.AddItem("Sample/sub2/");
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("Sample/item.png");
             targetProvider.AddItem("Sample/item2.png");
             targetProvider.AddItem("Sample/item4.png");
@@ -93,10 +93,10 @@ namespace Meziantou.BackupTests
         public void TestMethod4()
         {
             // Arrange
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("item.png", new byte[] { 1, 2 });
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png", new byte[] { 1, 2, 3 });
 
             var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
@@ -115,10 +115,10 @@ namespace Meziantou.BackupTests
         public void TestMethod5()
         {
             // Arrange
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("item.png", new byte[] { 1, 2 });
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png", new byte[] { 1, 2, 3 });
 
             var sourceProviderConfiguration = new ProviderConfiguration { Provider = sourceProvider };
@@ -133,8 +133,7 @@ namespace Meziantou.BackupTests
             // Assert
             Assert.AreEqual(2, targetProvider.GetFile("item.png").Length);
         }
-
-
+        
         [TestMethod]
         public void TestMethod6()
         {
@@ -145,10 +144,10 @@ namespace Meziantou.BackupTests
             var sourceFileContent = HexaToBytes("d131dd02c5e6eec4693d9a0698aff95c2fcab58712467eab4004583eb8fb7f8955ad340609f4b30283e488832571415a085125e8f7cdc99fd91dbdf280373c5bd8823e3156348f5bae6dacd436c919c6dd53e2b487da03fd02396306d248cda0e99f33420f577ee8ce54b67080a80d1ec69821bcb6a8839396f9652b6ff72a70");
             var targetFileContent = HexaToBytes("d131dd02c5e6eec4693d9a0698aff95c2fcab50712467eab4004583eb8fb7f8955ad340609f4b30283e4888325f1415a085125e8f7cdc99fd91dbd7280373c5bd8823e3156348f5bae6dacd436c919c6dd53e23487da03fd02396306d248cda0e99f33420f577ee8ce54b67080280d1ec69821bcb6a8839396f965ab6ff72a70");
 
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("item.png", sourceFileContent);
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
 
             targetProvider.AddItem("item.png", targetFileContent);
 
@@ -175,10 +174,10 @@ namespace Meziantou.BackupTests
             var sourceFileContent = HexaToBytes("d131dd02c5e6eec4693d9a0698aff95c2fcab58712467eab4004583eb8fb7f8955ad340609f4b30283e488832571415a085125e8f7cdc99fd91dbdf280373c5bd8823e3156348f5bae6dacd436c919c6dd53e2b487da03fd02396306d248cda0e99f33420f577ee8ce54b67080a80d1ec69821bcb6a8839396f9652b6ff72a70");
             var targetFileContent = HexaToBytes("d131dd02c5e6eec4693d9a0698aff95c2fcab50712467eab4004583eb8fb7f8955ad340609f4b30283e4888325f1415a085125e8f7cdc99fd91dbd7280373c5bd8823e3156348f5bae6dacd436c919c6dd53e23487da03fd02396306d248cda0e99f33420f577ee8ce54b67080280d1ec69821bcb6a8839396f965ab6ff72a70");
 
-            var sourceProvider = new FileSystem();
+            var sourceProvider = new InMemoryFileSystem();
             sourceProvider.AddItem("item.png", sourceFileContent);
 
-            var targetProvider = new FileSystem();
+            var targetProvider = new InMemoryFileSystem();
 
             targetProvider.AddItem("item.png", targetFileContent);
 

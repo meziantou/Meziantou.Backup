@@ -1,12 +1,11 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 
-namespace Meziantou.BackupTests.InMemoryFileSystem
+namespace Meziantou.Backup.FileSystem.InMemory
 {
-    internal class InMemoryFileSystemInfo : IFileSystemInfo
+    public class InMemoryFileSystemInfo : IFileSystemInfo
     {
         public InMemoryFileSystemInfo(InMemoryDirectoryInfo parent)
         {
@@ -14,17 +13,9 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
         }
 
         public InMemoryDirectoryInfo Parent { get; }
-
         public bool IsDirectory => this is InMemoryDirectoryInfo;
-
         public string Name { get; set; }
-
-        public string Extension => Path.GetExtension(Name);
-
-        public bool Exists => true;
-
         public DateTime CreationTimeUtc { get; set; }
-
         public DateTime LastWriteTimeUtc { get; set; }
 
         public Task DeleteAsync(CancellationToken ct)

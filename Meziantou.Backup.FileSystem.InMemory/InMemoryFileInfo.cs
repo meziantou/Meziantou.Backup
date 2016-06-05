@@ -3,9 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 
-namespace Meziantou.BackupTests.InMemoryFileSystem
+namespace Meziantou.Backup.FileSystem.InMemory
 {
-    internal class InMemoryFileInfo : InMemoryFileSystemInfo, IFileInfo
+    public class InMemoryFileInfo : InMemoryFileSystemInfo, IFileInfo
     {
         public byte[] Content { get; set; } = new byte[0];
 
@@ -22,7 +22,7 @@ namespace Meziantou.BackupTests.InMemoryFileSystem
 
         public void SetContent(Stream stream)
         {
-            using (MemoryStream ms = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
                 stream.CopyTo(ms);
                 ms.Seek(0, SeekOrigin.Begin);

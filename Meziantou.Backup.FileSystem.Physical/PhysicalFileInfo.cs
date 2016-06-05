@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
@@ -28,11 +27,6 @@ namespace Meziantou.Backup.FileSystem.Physical
         public Task<Stream> OpenReadAsync(CancellationToken ct)
         {
             return Task.FromResult<Stream>(new FileStream(FullName, FileMode.Open));
-        }
-
-        public Task<Stream> OpenWriteAsync(CancellationToken ct)
-        {
-            return Task.FromResult<Stream>(new FileStream(FullName, FileMode.OpenOrCreate));
         }
     }
 }

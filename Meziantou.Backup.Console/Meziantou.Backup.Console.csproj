@@ -53,6 +53,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BackupConsole.cs" />
     <Compile Include="BackupSummary.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -65,6 +66,10 @@
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj">
       <Project>{afd9ff00-6a97-48e6-9ddb-c009dd93c280}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj">
+      <Project>{77eadfed-a380-42ab-ae56-71a96ca00f34}</Project>
+      <Name>Meziantou.Backup.FileSystem.Aes</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj">
       <Project>{79D203BC-2A1C-4A21-A625-E9DC59FB5194}</Project>

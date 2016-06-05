@@ -8,7 +8,6 @@ namespace Meziantou.Backup.FileSystem.Abstractions
     {
         bool IsDirectory { get; }
         string Name { get; }
-        bool Exists { get; }
         DateTime CreationTimeUtc { get; }
         DateTime LastWriteTimeUtc { get; }
         Task DeleteAsync(CancellationToken ct);

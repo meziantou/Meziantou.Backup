@@ -22,34 +22,7 @@ namespace Meziantou.Backup
         public event EventHandler<BackupActionEventArgs> Action;
         public event EventHandler<BackupErrorEventArgs> Error;
         public event EventHandler<FileCopyingEventArgs> Copying;
-
-        private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
-        {
-            var authenticable = fileSystem as IAuthenticable;
-            if (authenticable != null)
-            {
-                await authenticable.LogInAsync(ct).ConfigureAwait(false);
-            }
-
-            return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct).ConfigureAwait(false);
-        }
-
-        public async Task RunAsync(ProviderConfiguration source, ProviderConfiguration target, CancellationToken ct)
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (target == null) throw new ArgumentNullException(nameof(target));
-
-            ct.ThrowIfCancellationRequested();
-
-            var sourceProvider = source.CreateProvider();
-            var targetProvider = target.CreateProvider();
-
-            var sourceDir = await GetOrCreateRootDirectoryItemAsync(sourceProvider, source.Path, ct).ConfigureAwait(false);
-            var targetDir = await GetOrCreateRootDirectoryItemAsync(targetProvider, target.Path, ct).ConfigureAwait(false);
-
-            await RunAsync(sourceDir, targetDir, ct).ConfigureAwait(false);
-        }
-
+        
         public Task RunAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -115,7 +88,7 @@ namespace Meziantou.Backup
 
             if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Length))
             {
-                if (source.Length != target.Length)
+                if (source.Length < 0 || target.Length < 0 || source.Length != target.Length)
                     return FileInfoEqualityMethods.Length;
             }
 
@@ -276,8 +249,11 @@ namespace Meziantou.Backup
                         var di = await RetryAsync(() => targetItem.CreateDirectoryAsync(sourceDirectory.Name, ct), ct).ConfigureAwait(false);
                         OnAction(new BackupActionEventArgs(BackupAction.Created, sourceItem, di));
 
-                        // Continue synchonization of the new directory
-                        await SynchronizeAsync(sourceDirectory, di, ct).ConfigureAwait(false);
+                        if (di != null)
+                        {
+                            // Continue synchonization of the new directory
+                            await SynchronizeAsync(sourceDirectory, di, ct).ConfigureAwait(false);
+                        }
                     }
                 }
             }
