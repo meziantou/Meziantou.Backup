@@ -45,10 +45,34 @@ Configuration:
 - `Configuration-ApplicationName` (optional, default `null`): This allows to store the credential (Refresh token) in the [Windows Credential Manager](http://windows.microsoft.com/en-us/windows7/what-is-credential-manager) so you don't need to enter your credential every time. Use a different name for different OneDrive account. The name is not related to your OneDrive account.
 - `Configuration-AuthenticateOnUnauthenticatedError` (optional, default `true`): Re-authenticate when the API call fails with error code `Unauthenticated`
 
+## AES Encryption
+
+You can encrypt file content and name (optional) using AES128 or AES256.
+
+```cmd
+targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true
+```
+
+- `AesMethod`: `Aes128` or `Aes256`
+- `AesPassword`: Password to encrypt or decrypt
+- `AesEncryptFileName`: Indicates whether file names must be encrypted
+- `AesEncryptDirectoryName`: Indicates whether directory names must be encrypted
+
+*Note 1: you can also decrypt files if you replace `target` by `source`*
+
+*Note 2: The file length of an encrypted file cannot be computed correctly so you should not use it to compare to file. Instead you may want to use the `LastWriteTime`: `EqualityMethods=LastWriteTime`*
+
+
 # Examples
 
+From the local file system to OneDrive:
 ```cmd
 Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou"
 ```
 
-Copy files from the local hard drive (directory `C:\Users\meziantou\ToBeBackedUp`) to OneDrive (directory `/Backup/meziantou/`) using the credential saved with the name `Meziantou.Backup.OneDrive.Meziantou`
+From the local file system to OneDrive using AES 256 with the password 123456:
+```cmd
+Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou" sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\Desktop\New folder" targetProviderName=FileSystem targetPath="C:\Users\meziantou\Desktop\New folder - Backup" targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true EqualityMethods=LastWriteTime
+```
+
+
