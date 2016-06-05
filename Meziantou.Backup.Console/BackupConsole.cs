@@ -133,16 +133,35 @@ namespace Meziantou.Backup.Console
 
             ct.ThrowIfCancellationRequested();
 
-            var sourceDir = await GetDirectoryInfoAsync(configuration, "source", ct);
-            var targetDir = await GetDirectoryInfoAsync(configuration, "target", ct);
+            IFileSystem sourceFileSystem = null;
+            IFileSystem targetFileSystem = null;
+            try
+            {
+                string sourcePath;
+                string targetPath;
 
-            await backup.RunAsync(sourceDir, targetDir, ct).ConfigureAwait(false);
+                sourceFileSystem = GetFileSystem(configuration, "source", out sourcePath);
+                targetFileSystem = GetFileSystem(configuration, "target", out targetPath);
+
+                var sourceDirectory = await GetOrCreateRootDirectoryItemAsync(sourceFileSystem, sourcePath, ct);
+                var targetDirectory = await GetOrCreateRootDirectoryItemAsync(targetFileSystem, targetPath, ct);
+
+                await backup.RunAsync(sourceDirectory, targetDirectory, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                var sourceDisposable = sourceFileSystem as IDisposable;
+                sourceDisposable?.Dispose();
+
+                var targetDisposable = targetFileSystem as IDisposable;
+                targetDisposable?.Dispose();
+            }
         }
 
-        private async Task<IDirectoryInfo> GetDirectoryInfoAsync(IConfigurationRoot configuration, string prefix, CancellationToken ct)
+        private IFileSystem GetFileSystem(IConfigurationRoot configuration, string prefix, out string path)
         {
             string providerName = GetValue(configuration, prefix + "ProviderName", null);
-            string path = GetValue(configuration, prefix + "Path", null);
+            path = GetValue(configuration, prefix + "Path", null);
             AesVersion? aesVersion = GetValue(configuration, prefix + "AesVersion", (AesVersion?)null);
             bool aesEncryptFileName = GetValue(configuration, prefix + "AesEncryptFileName", false);
             bool aesEncryptDirectoryName = GetValue(configuration, prefix + "AesEncryptDirectoryName", false);
@@ -188,7 +207,7 @@ namespace Meziantou.Backup.Console
                 fileSystem = aesFileSystem;
             }
 
-            return await GetOrCreateRootDirectoryItemAsync(fileSystem, path, ct);
+            return fileSystem;
         }
 
         protected virtual object CreateInstance(Type type)
@@ -206,6 +225,9 @@ namespace Meziantou.Backup.Console
 
             if (string.Equals("AES", name, StringComparison.InvariantCultureIgnoreCase))
                 return Type.GetType("Meziantou.Backup.FileSystem.Aes.AesFileSystem, Meziantou.Backup.FileSystem.Aes");
+
+            if (string.Equals("sftp", name, StringComparison.InvariantCultureIgnoreCase))
+                return Type.GetType("Meziantou.Backup.FileSystem.Sftp.SftpFileSystem, Meziantou.Backup.FileSystem.Sftp");
 
             return Type.GetType(name, true);
         }

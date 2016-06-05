@@ -79,6 +79,10 @@
       <Project>{CF9B7CD2-E1F5-41D5-85F8-49FD706AD1E9}</Project>
       <Name>Meziantou.Backup.FileSystem.Physical</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Sftp\Meziantou.Backup.FileSystem.Sftp.csproj">
+      <Project>{72626f1e-77e6-4c65-9444-2c5c38ce102c}</Project>
+      <Name>Meziantou.Backup.FileSystem.Sftp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj">
       <Project>{38a57b27-bf39-44e8-84e6-c011988b4218}</Project>
       <Name>Meziantou.Backup</Name>
