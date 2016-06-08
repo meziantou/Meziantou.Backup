@@ -82,7 +82,7 @@ Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\
 
 From the local file system to OneDrive using `AES 256` with the password `123456`:
 ```cmd
-Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou" sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\Desktop\New folder" targetProviderName=FileSystem targetPath="C:\Users\meziantou\Desktop\New folder - Backup" targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true EqualityMethods=LastWriteTime
+Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou" targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true EqualityMethods=LastWriteTime
 ```
 
 
