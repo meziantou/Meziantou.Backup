@@ -50,7 +50,7 @@ namespace Meziantou.OneDrive
             credential.Comment = IntPtr.Zero;
             credential.TargetAlias = IntPtr.Zero;
             credential.Type = CredentialType.Generic;
-            credential.Persist = (UInt32)CredentialPersistence.Session;
+            credential.Persist = (UInt32)CredentialPersistence.LocalMachine;
             credential.CredentialBlobSize = (UInt32)Encoding.Unicode.GetBytes(secret).Length;
             credential.TargetName = Marshal.StringToCoTaskMemUni(applicationName);
             credential.CredentialBlob = Marshal.StringToCoTaskMemUni(secret);
