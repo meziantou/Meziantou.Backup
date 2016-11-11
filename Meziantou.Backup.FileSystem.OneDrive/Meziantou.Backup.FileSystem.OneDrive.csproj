@@ -30,6 +30,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Meziantou.OneDriveClient, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Meziantou.OneDriveClient.1.0.0.3\lib\portable50\Meziantou.OneDriveClient.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Meziantou.OneDriveClient.Windows, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Meziantou.OneDriveClient.Windows.1.0.0\lib\net461\Meziantou.OneDriveClient.Windows.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
@@ -43,10 +55,9 @@
       <Project>{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Meziantou.OneDrive\Meziantou.OneDrive.csproj">
-      <Project>{77cbfb60-5bc6-4c6f-99a6-e6a92f52ded4}</Project>
-      <Name>Meziantou.OneDrive</Name>
-    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

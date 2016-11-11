@@ -70,10 +70,6 @@
       <Project>{cf9b7cd2-e1f5-41d5-85f8-49fd706ad1e9}</Project>
       <Name>Meziantou.Backup.FileSystem.Physical</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Meziantou.OneDrive\Meziantou.OneDrive.csproj">
-      <Project>{77cbfb60-5bc6-4c6f-99a6-e6a92f52ded4}</Project>
-      <Name>Meziantou.OneDrive</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
