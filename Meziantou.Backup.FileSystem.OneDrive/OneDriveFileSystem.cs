@@ -2,18 +2,18 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
-using Meziantou.OneDriveClient;
-using Meziantou.OneDriveClient.Windows;
+using Meziantou.OneDrive;
+using Meziantou.OneDrive.Windows;
 
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
     public class OneDriveFileSystem : IFileSystem, IAuthenticable
     {
-        public OneDriveClient.OneDriveClient Client { get; }
+        public OneDriveClient Client { get; }
 
         public OneDriveFileSystem()
         {
-            var client = new OneDriveClient.OneDriveClient();
+            var client = new OneDriveClient();
             client.ApplicationId = "000000004418B915";
             client.AuthorizationProvider = new AuthorizationCodeProvider();
             client.RefreshTokenHandler = new MemoryRefreshTokenHandler();

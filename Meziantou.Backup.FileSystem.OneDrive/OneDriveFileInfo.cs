@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
-using Meziantou.OneDriveClient;
+using Meziantou.OneDrive;
 
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
