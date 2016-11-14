@@ -15,6 +15,7 @@ namespace Meziantou.Backup.FileSystem.Aes
         public string Password { get; set; }
         public bool EncryptFileName { get; set; }
         public bool EncryptDirectoryName { get; set; }
+        public int IterationCount { get; set; } = 10000;
 
         public AesFileSystem(IFileSystem fileSystem)
         {
@@ -26,7 +27,7 @@ namespace Meziantou.Backup.FileSystem.Aes
         {
             if (salt == null) throw new ArgumentNullException(nameof(salt));
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(Password, salt, 10000))
+            using (var deriveBytes = new Rfc2898DeriveBytes(Password, salt, IterationCount))
             {
                 int length = version == AesVersion.Aes128 ? 16 : 32;
                 return deriveBytes.GetBytes(length);

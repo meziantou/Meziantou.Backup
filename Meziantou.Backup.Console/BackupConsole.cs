@@ -169,6 +169,7 @@ namespace Meziantou.Backup.Console
             bool aesEncryptFileName = GetValue(configuration, prefix + "AesEncryptFileName", false);
             bool aesEncryptDirectoryName = GetValue(configuration, prefix + "AesEncryptDirectoryName", false);
             string aesPassword = GetValue(configuration, prefix + "AesPassword", null);
+            int? aesIterationCount = GetValue(configuration, prefix + "AesIterationCount", (int?)null);
 
             Dictionary<string, object> providerConfiguration = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
@@ -196,6 +197,7 @@ namespace Meziantou.Backup.Console
 
             fileSystem.Initialize(providerConfiguration);
 
+            // Wrap file system with AES file system
             if (!string.IsNullOrEmpty(aesPassword))
             {
                 var aesFileSystem = new AesFileSystem(fileSystem);
@@ -204,9 +206,15 @@ namespace Meziantou.Backup.Console
                     aesFileSystem.Version = aesVersion.Value;
                 }
 
+                if (aesIterationCount.HasValue)
+                {
+                    aesFileSystem.IterationCount = aesIterationCount.Value;
+                }
+
                 aesFileSystem.EncryptDirectoryName = aesEncryptDirectoryName;
                 aesFileSystem.EncryptFileName = aesEncryptFileName;
                 aesFileSystem.Password = aesPassword;
+
                 fileSystem = aesFileSystem;
             }
 
