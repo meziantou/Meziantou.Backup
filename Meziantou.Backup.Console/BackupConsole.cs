@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 using Meziantou.Backup.FileSystem.Aes;
+using Meziantou.Framework.Security;
 using Microsoft.Extensions.CommandLineUtils;
 
 namespace Meziantou.Backup.Console
@@ -105,13 +107,19 @@ namespace Meziantou.Backup.Console
 
                 var sourceAesMethod = command.Option("--sourceAesMethod <METHOD>", "", CommandOptionType.SingleValue);
                 var sourceAesPassword = command.Option("--sourceAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var sourceAesPasswordName = command.Option("--sourceAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
+                var sourceAesAskPassword = command.Option("--sourceAesAskPassword", "", CommandOptionType.NoValue);
                 var sourceAesEncryptFileNames = command.Option("--sourceAesEncryptFileNames", "", CommandOptionType.NoValue);
                 var sourceAesEncryptDirectoryNames = command.Option("--sourceAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
 
                 var targetAesMethod = command.Option("--targetAesMethod <METHOD>", "", CommandOptionType.SingleValue);
                 var targetAesPassword = command.Option("--targetAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var targetAesPasswordName = command.Option("--targetAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
+                var targetAesAskPassword = command.Option("--targetAesAskPassword", "", CommandOptionType.NoValue);
                 var targetAesEncryptFileNames = command.Option("--targetAesEncryptFileNames", "", CommandOptionType.NoValue);
                 var targetAesEncryptDirectoryNames = command.Option("--targetAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+
+                var testConfig = command.Option("--test-config", "for testing purpose only", CommandOptionType.NoValue);
 
                 command.OnExecute(() =>
                 {
@@ -142,8 +150,13 @@ namespace Meziantou.Backup.Console
                         if (targetFileSystem == null)
                             return 2;
 
-                        sourceFileSystem = CreateAesFileSystem(sourceFileSystem, sourceAesMethod, sourceAesPassword, sourceAesEncryptFileNames, sourceAesEncryptDirectoryNames);
-                        targetFileSystem = CreateAesFileSystem(targetFileSystem, targetAesMethod, targetAesPassword, targetAesEncryptFileNames, targetAesEncryptDirectoryNames);
+                        sourceFileSystem = CreateAesFileSystem(sourceFileSystem, sourceAesMethod, sourceAesPassword, sourceAesPasswordName, sourceAesAskPassword, sourceAesEncryptFileNames, sourceAesEncryptDirectoryNames);
+                        if (sourceFileSystem == null)
+                            return 3;
+
+                        targetFileSystem = CreateAesFileSystem(targetFileSystem, targetAesMethod, targetAesPassword, targetAesPasswordName, targetAesAskPassword, targetAesEncryptFileNames, targetAesEncryptDirectoryNames);
+                        if (targetFileSystem == null)
+                            return 4;
 
                         using (var cts = new CancellationTokenSource())
                         {
@@ -153,9 +166,12 @@ namespace Meziantou.Backup.Console
                                 eventArgs.Cancel = true;
                             };
 
-                            var backupAsync = RunAsync(backup, sourceFileSystem, sourcePath, targetFileSystem, targetPath, cts.Token);
-                            var awaiter = backupAsync.GetAwaiter();
-                            awaiter.GetResult();
+                            if (!GetValue(testConfig, false))
+                            {
+                                var backupAsync = RunAsync(backup, sourceFileSystem, sourcePath, targetFileSystem, targetPath, cts.Token);
+                                var awaiter = backupAsync.GetAwaiter();
+                                awaiter.GetResult();
+                            }
                         }
                     }
                     catch (OperationCanceledException)
@@ -181,17 +197,40 @@ namespace Meziantou.Backup.Console
             app.Execute(args);
         }
 
-        private IFileSystem CreateAesFileSystem(IFileSystem fileSystem, CommandOption method, CommandOption password, CommandOption encryptFileNames, CommandOption encryptDirectoryNames)
+        private IFileSystem CreateAesFileSystem(IFileSystem fileSystem, CommandOption method, CommandOption password, CommandOption passwordName, CommandOption askPassword, CommandOption encryptFileNames, CommandOption encryptDirectoryNames)
         {
-            if (!password.HasValue())
+            if (!password.HasValue() && !askPassword.HasValue() && !passwordName.HasValue())
                 return fileSystem;
+
+            string pwd = GetValue(password, (string)null);
+            if (string.IsNullOrEmpty(pwd))
+            {
+                var applicationName = GetValue(passwordName, null);
+                if (!string.IsNullOrEmpty(applicationName))
+                {
+                    var cred = CredentialManager.ReadCredential(applicationName);
+                    if (cred != null)
+                    {
+                        pwd = cred.Password;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(pwd) && GetValue(askPassword, false))
+            {
+                System.Console.Write("Enter password: ");
+                pwd = GetPassword();
+                System.Console.WriteLine();
+            }
+
+            if (string.IsNullOrEmpty(pwd))
+                return null;
 
             var aesFs = new AesFileSystem(fileSystem);
             aesFs.Version = GetValue(method, AesVersion.Aes256);
-            aesFs.Password = GetValue(password, (string)null);
             aesFs.EncryptDirectoryName = GetValue(encryptDirectoryNames, false);
             aesFs.EncryptFileName = GetValue(encryptFileNames, false);
-
+            aesFs.Password = pwd;
             return aesFs;
         }
 
@@ -399,6 +438,34 @@ namespace Meziantou.Backup.Console
                 return fullName.FullName;
 
             return item?.Name;
+        }
+
+        public string GetPassword()
+        {
+            var pwd = new StringBuilder();
+            while (true)
+            {
+                ConsoleKeyInfo i = System.Console.ReadKey(true);
+                if (i.Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+                else if (i.Key == ConsoleKey.Backspace)
+                {
+                    if (pwd.Length > 0)
+                    {
+                        pwd.Remove(pwd.Length - 1, 1);
+                        System.Console.Write("\b \b");
+                    }
+                }
+                else
+                {
+                    pwd.Append(i.KeyChar);
+                    System.Console.Write("*");
+                }
+            }
+
+            return pwd.ToString();
         }
     }
 }
