@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
-using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
 
 namespace Meziantou.Backup.FileSystem.Physical
 {
@@ -28,7 +28,7 @@ namespace Meziantou.Backup.FileSystem.Physical
         public Task DeleteAsync(CancellationToken ct)
         {
             _fsi.Delete();
-            return Task.CompletedTask;
+            return Task.FromResult(0);
         }
     }
 }

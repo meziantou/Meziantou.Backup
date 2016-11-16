@@ -24,7 +24,7 @@ namespace Meziantou.Backup.FileSystem.InMemory
                 throw new Exception("Cannot delete root directory");
 
             Parent.Children.Remove(this);
-            return Task.CompletedTask;
+            return Task.FromResult(0);
         }
     }
 }

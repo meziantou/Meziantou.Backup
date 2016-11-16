@@ -4,14 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{38A57B27-BF39-44E8-84E6-C011988B4218}</ProjectGuid>
+    <ProjectGuid>{4015D7EE-649C-4A4A-AE4E-CA30E1D604BA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Meziantou.Backup</RootNamespace>
     <AssemblyName>Meziantou.Backup</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -38,14 +39,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Backup.cs" />
@@ -61,14 +54,6 @@
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj">
       <Project>{AFD9FF00-6A97-48E6-9DDB-C009DD93C280}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj">
-      <Project>{79d203bc-2a1c-4a21-a625-e9dc59fb5194}</Project>
-      <Name>Meziantou.Backup.FileSystem.OneDrive</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Physical\Meziantou.Backup.FileSystem.Physical.csproj">
-      <Project>{cf9b7cd2-e1f5-41d5-85f8-49fd706ad1e9}</Project>
-      <Name>Meziantou.Backup.FileSystem.Physical</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

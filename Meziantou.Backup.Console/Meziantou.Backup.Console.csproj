@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Meziantou.Backup.Console</RootNamespace>
     <AssemblyName>Meziantou.Backup.Console</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,45 +34,31 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.Configuration.1.0.0\lib\netstandard1.1\Microsoft.Extensions.Configuration.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.Configuration.Abstractions.1.0.0\lib\netstandard1.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Configuration.CommandLine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.Configuration.CommandLine.1.0.0\lib\netstandard1.1\Microsoft.Extensions.Configuration.CommandLine.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.Primitives, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.Primitives.1.0.0\lib\netstandard1.0\Microsoft.Extensions.Primitives.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.CommandLineUtils.1.0.0\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BackupConsole.cs" />
     <Compile Include="BackupSummary.cs" />
+    <Compile Include="CommandLineApplicationExtensions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj">
-      <Project>{afd9ff00-6a97-48e6-9ddb-c009dd93c280}</Project>
+      <Project>{DCCA6461-63BA-479A-9792-4CE90334D561}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj">
-      <Project>{77eadfed-a380-42ab-ae56-71a96ca00f34}</Project>
+      <Project>{9F6440DC-265E-465D-A161-ED053BF909F6}</Project>
       <Name>Meziantou.Backup.FileSystem.Aes</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj">
@@ -79,7 +66,7 @@
       <Name>Meziantou.Backup.FileSystem.OneDrive</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Physical\Meziantou.Backup.FileSystem.Physical.csproj">
-      <Project>{CF9B7CD2-E1F5-41D5-85F8-49FD706AD1E9}</Project>
+      <Project>{968e75d1-b755-4e1e-809a-b619c2235f97}</Project>
       <Name>Meziantou.Backup.FileSystem.Physical</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Sftp\Meziantou.Backup.FileSystem.Sftp.csproj">
@@ -87,7 +74,7 @@
       <Name>Meziantou.Backup.FileSystem.Sftp</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj">
-      <Project>{38a57b27-bf39-44e8-84e6-c011988b4218}</Project>
+      <Project>{4015D7EE-649C-4A4A-AE4E-CA30E1D604BA}</Project>
       <Name>Meziantou.Backup</Name>
     </ProjectReference>
   </ItemGroup>

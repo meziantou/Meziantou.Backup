@@ -4,7 +4,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
-using FileInfo = Alphaleonis.Win32.Filesystem.FileInfo;
 
 namespace Meziantou.Backup.FileSystem.Physical
 {

@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Meziantou.BackupTests</RootNamespace>
     <AssemblyName>Meziantou.BackupTests</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -16,6 +16,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
     <IsCodedUITest>False</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -56,19 +57,19 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj">
-      <Project>{afd9ff00-6a97-48e6-9ddb-c009dd93c280}</Project>
+      <Project>{DCCA6461-63BA-479A-9792-4CE90334D561}</Project>
       <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj">
-      <Project>{77EADFED-A380-42AB-AE56-71A96CA00F34}</Project>
+      <Project>{9F6440DC-265E-465D-A161-ED053BF909F6}</Project>
       <Name>Meziantou.Backup.FileSystem.Aes</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.InMemory\Meziantou.Backup.FileSystem.InMemory.csproj">
-      <Project>{ba0173c4-174e-47cd-af71-c832ac402877}</Project>
+      <Project>{5792B032-93F0-4D3A-8ED7-AE57B3CA1CFA}</Project>
       <Name>Meziantou.Backup.FileSystem.InMemory</Name>
     </ProjectReference>
     <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj">
-      <Project>{38a57b27-bf39-44e8-84e6-c011988b4218}</Project>
+      <Project>{4015d7ee-649c-4a4a-ae4e-ca30e1d604ba}</Project>
       <Name>Meziantou.Backup</Name>
     </ProjectReference>
   </ItemGroup>

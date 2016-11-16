@@ -13,10 +13,10 @@ namespace Meziantou.Backup
     {
         public int RetryCount { get; set; } = 3;
         public bool ContinueOnError { get; set; } = true;
-        public bool CanDeleteFiles { get; set; } = false;
+        public bool CanDeleteFiles { get; set; }
         public bool CanUpdateFiles { get; set; } = true;
         public bool CanCreateFiles { get; set; } = true;
-        public bool CanDeleteDirectories { get; set; } = false;
+        public bool CanDeleteDirectories { get; set; }
         public bool CanCreateDirectories { get; set; } = true;
         public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 

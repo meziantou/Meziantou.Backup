@@ -4,73 +4,71 @@ using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 using Meziantou.Backup.FileSystem.Aes;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.CommandLineUtils;
 
 namespace Meziantou.Backup.Console
 {
     internal class BackupConsole
     {
-        private string GetValue(IConfigurationRoot configuration, string key, string defaultValue)
+        private string GetValue(CommandOption option, string defaultValue)
         {
-            var section = configuration.GetSection(key);
-            if (section == null)
+            if (!option.HasValue())
                 return defaultValue;
 
-            return section.Value;
+            return option.Value();
         }
 
-        private int GetValue(IConfigurationRoot configuration, string key, int defaultValue)
+        private int GetValue(CommandOption option, int defaultValue)
         {
-            var section = configuration.GetSection(key);
-            if (section == null)
+            if (!option.HasValue())
                 return defaultValue;
 
             int v;
-            if (int.TryParse(section.Value, out v))
+            if (int.TryParse(option.Value(), out v))
                 return v;
 
             return defaultValue;
         }
 
-        private bool GetValue(IConfigurationRoot configuration, string key, bool defaultValue)
+        private bool GetValue(CommandOption option, bool defaultValue)
         {
-            var section = configuration.GetSection(key);
-            if (section == null)
+            if (!option.HasValue())
                 return defaultValue;
 
+            if (option.OptionType == CommandOptionType.NoValue)
+                return true;
+
             bool v;
-            if (bool.TryParse(section.Value, out v))
+            if (bool.TryParse(option.Value(), out v))
                 return v;
 
             return defaultValue;
         }
 
-        private T GetValue<T>(IConfigurationRoot configuration, string key, T defaultValue) where T : struct
+        private T GetValue<T>(CommandOption option, T defaultValue) where T : struct
         {
-            var section = configuration.GetSection(key);
-            if (section == null)
+            if (!option.HasValue())
                 return defaultValue;
 
             if (typeof(T).IsEnum)
             {
                 T v;
-                if (Enum.TryParse(section.Value, true, out v))
+                if (Enum.TryParse(option.Value(), true, out v))
                     return v;
             }
 
             return defaultValue;
         }
 
-        private T? GetValue<T>(IConfigurationRoot configuration, string key, T? defaultValue) where T : struct
+        private T? GetValue<T>(CommandOption option, T? defaultValue) where T : struct
         {
-            var section = configuration.GetSection(key);
-            if (section == null)
+            if (!option.HasValue())
                 return defaultValue;
 
             if (typeof(T).IsEnum)
             {
                 T v;
-                if (Enum.TryParse(section.Value, true, out v))
+                if (Enum.TryParse(option.Value(), true, out v))
                     return v;
             }
 
@@ -79,73 +77,209 @@ namespace Meziantou.Backup.Console
 
         public void Main(string[] args)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
+
+            var app = new CommandLineApplication();
+            app.HelpOption();
+
+            app.Command("backup", throwOnUnexpectedArg: false, configuration: command =>
             {
-                System.Console.CancelKeyPress += (sender, eventArgs) =>
+                command.HelpOption();
+
+                var sourceArgument = command.Argument("[SOURCE]", "");
+                var targetArgument = command.Argument("[TARGET]", "");
+
+                var sourceOptions = command.Option("--source <PATH>", "", CommandOptionType.SingleValue);
+                var targetOptions = command.Option("--target <PATH>", "", CommandOptionType.SingleValue);
+
+                var sourceConfigurationOptions = command.Option("-sc|--sourceConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
+                var targetConfigurationOptions = command.Option("-tc|--targetConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
+
+                var equalityOptions = command.Option("--equality <EqualityMethods>", "", CommandOptionType.SingleValue);
+                var retryCountOptions = command.Option("--retry <RetryCount>", "", CommandOptionType.SingleValue);
+                var createDirectoriesOptions = command.Option("--createDirectories <CanCreateDirectories>", "", CommandOptionType.SingleValue);
+                var deleteDirectoriesOptions = command.Option("--deleteDirectories <CanDeleteDirectories>", "", CommandOptionType.SingleValue);
+                var createFilesOptions = command.Option("--createFiles <CanCreateFiles>", "", CommandOptionType.SingleValue);
+                var updateFilesOptions = command.Option("--updateFiles <CanUpdateFiles>", "", CommandOptionType.SingleValue);
+                var deleteFilesOptions = command.Option("--deleteFiles <CanDeleteFiles>", "", CommandOptionType.SingleValue);
+                var continueOnErrorOptions = command.Option("--ignoreErrors", "", CommandOptionType.NoValue);
+
+                var sourceAesMethod = command.Option("--sourceAesMethod <METHOD>", "", CommandOptionType.SingleValue);
+                var sourceAesPassword = command.Option("--sourceAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var sourceAesEncryptFileNames = command.Option("--sourceAesEncryptFileNames", "", CommandOptionType.NoValue);
+                var sourceAesEncryptDirectoryNames = command.Option("--sourceAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+
+                var targetAesMethod = command.Option("--targetAesMethod <METHOD>", "", CommandOptionType.SingleValue);
+                var targetAesPassword = command.Option("--targetAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var targetAesEncryptFileNames = command.Option("--targetAesEncryptFileNames", "", CommandOptionType.NoValue);
+                var targetAesEncryptDirectoryNames = command.Option("--targetAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+
+                command.OnExecute(() =>
                 {
-                    cts.Cancel();
-                    eventArgs.Cancel = true;
-                };
+                    var backup = new Backup();
+                    backup.Action += Backup_Action;
+                    backup.Error += Backup_Error;
+                    backup.Copying += Backup_Copying;
 
-                var configuration = new ConfigurationBuilder()
-                    .AddCommandLine(args)
-                    .Build();
+                    backup.EqualityMethods = GetValue(equalityOptions, FileInfoEqualityMethods.Default);
+                    backup.RetryCount = GetValue(retryCountOptions, 3);
+                    backup.CanCreateDirectories = GetValue(createDirectoriesOptions, true);
+                    backup.CanDeleteDirectories = GetValue(deleteDirectoriesOptions, false);
+                    backup.CanCreateFiles = GetValue(createFilesOptions, true);
+                    backup.CanUpdateFiles = GetValue(updateFilesOptions, true);
+                    backup.CanDeleteFiles = GetValue(deleteFilesOptions, false);
+                    backup.ContinueOnError = GetValue(continueOnErrorOptions, false);
 
-                Backup backup = new Backup();
-                backup.Action += Backup_Action;
-                backup.Error += Backup_Error;
-                backup.Copying += Backup_Copying;
-                backup.EqualityMethods = GetValue(configuration, "EqualityMethods", FileInfoEqualityMethods.Default);
-                backup.RetryCount = GetValue(configuration, "RetryCount", 3);
-                backup.CanCreateDirectories = GetValue(configuration, "CanCreateDirectories", true);
-                backup.CanDeleteDirectories = GetValue(configuration, "CanDeleteDirectories", false);
-                backup.CanCreateFiles = GetValue(configuration, "CanCreateFiles", true);
-                backup.CanUpdateFiles = GetValue(configuration, "CanUpdateFiles", true);
-                backup.CanDeleteFiles = GetValue(configuration, "CanDeleteFiles", false);
-                backup.ContinueOnError = GetValue(configuration, "ContinueOnError", true);
+                    var summary = new BackupSummary(backup);
+                    try
+                    {
+                        string sourcePath;
+                        string targetPath;
+                        var sourceFileSystem = GetFileSystem(new object[] { sourceArgument, sourceOptions }, sourceConfigurationOptions, out sourcePath);
+                        if (sourceFileSystem == null)
+                            return 1;
 
-                var summary = new BackupSummary(backup);
+                        var targetFileSystem = GetFileSystem(new object[] { targetArgument, targetOptions }, targetConfigurationOptions, out targetPath);
+                        if (targetFileSystem == null)
+                            return 2;
 
-                try
-                {
-                    var backupAsync = RunAsync(backup, configuration, cts.Token);
-                    var awaiter = backupAsync.GetAwaiter();
-                    awaiter.GetResult();
-                }
-                catch (OperationCanceledException)
-                {
-                    System.Console.WriteLine("Operation was canceled");
-                }
+                        sourceFileSystem = CreateAesFileSystem(sourceFileSystem, sourceAesMethod, sourceAesPassword, sourceAesEncryptFileNames, sourceAesEncryptDirectoryNames);
+                        targetFileSystem = CreateAesFileSystem(targetFileSystem, targetAesMethod, targetAesPassword, targetAesEncryptFileNames, targetAesEncryptDirectoryNames);
 
-                System.Console.WriteLine("Directories: " + summary.DirectoryCount);
-                System.Console.WriteLine("  Created: " + summary.DirectoryCreatedCount);
-                System.Console.WriteLine("  Deleted: " + summary.DirectoryDeletedCount);
+                        using (var cts = new CancellationTokenSource())
+                        {
+                            System.Console.CancelKeyPress += (sender, eventArgs) =>
+                            {
+                                cts.Cancel();
+                                eventArgs.Cancel = true;
+                            };
 
-                System.Console.WriteLine("File: " + summary.FileCount);
-                System.Console.WriteLine("  Created: " + summary.FileCreatedCount);
-                System.Console.WriteLine("  Updated: " + summary.FileUpdatedCount);
-                System.Console.WriteLine("  Deleted: " + summary.FileDeletedCount);
+                            var backupAsync = RunAsync(backup, sourceFileSystem, sourcePath, targetFileSystem, targetPath, cts.Token);
+                            var awaiter = backupAsync.GetAwaiter();
+                            awaiter.GetResult();
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        System.Console.WriteLine("Operation was canceled");
+                    }
 
-                System.Console.WriteLine("Errors: " + summary.ErrorCount);
-            }
+                    System.Console.WriteLine("Directories: " + summary.DirectoryCount);
+                    System.Console.WriteLine("  Created: " + summary.DirectoryCreatedCount);
+                    System.Console.WriteLine("  Deleted: " + summary.DirectoryDeletedCount);
+
+                    System.Console.WriteLine("File: " + summary.FileCount);
+                    System.Console.WriteLine("  Created: " + summary.FileCreatedCount);
+                    System.Console.WriteLine("  Updated: " + summary.FileUpdatedCount);
+                    System.Console.WriteLine("  Deleted: " + summary.FileDeletedCount);
+
+                    System.Console.WriteLine("Errors: " + summary.ErrorCount);
+
+                    return 0;
+                });
+            });
+
+            app.Execute(args);
         }
 
-        private async Task RunAsync(Backup backup, IConfigurationRoot configuration, CancellationToken ct)
+        private IFileSystem CreateAesFileSystem(IFileSystem fileSystem, CommandOption method, CommandOption password, CommandOption encryptFileNames, CommandOption encryptDirectoryNames)
         {
-            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (!password.HasValue())
+                return fileSystem;
 
+            var aesFs = new AesFileSystem(fileSystem);
+            aesFs.Version = GetValue(method, AesVersion.Aes256);
+            aesFs.Password = GetValue(password, (string)null);
+            aesFs.EncryptDirectoryName = GetValue(encryptDirectoryNames, false);
+            aesFs.EncryptFileName = GetValue(encryptFileNames, false);
+
+            return aesFs;
+        }
+
+        private IFileSystem GetFileSystem(IEnumerable<object> pathOptions, CommandOption configuration, out string path)
+        {
+            path = null;
+            var fullPath = GetPath(pathOptions);
+            if (fullPath == null)
+                return null;
+
+            string providerName;
+            var index = fullPath.IndexOf("://", StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                providerName = null;
+                path = fullPath;
+            }
+            else
+            {
+                providerName = fullPath.Substring(0, index);
+                path = fullPath.Substring(index + 3);
+            }
+
+            var providerType = GetType(providerName);
+            if (providerType == null)
+                return null;
+
+            var fileSystemProvider = CreateInstance(providerType) as IFileSystem;
+            if (fileSystemProvider == null)
+                return null;
+
+            var configDictionary = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (configuration.Values != null)
+            {
+                foreach (var value in configuration.Values)
+                {
+                    var indexOfEqual = value.IndexOf('=');
+                    if (indexOfEqual < 0)
+                        continue;
+
+                    configDictionary.Add(value.Substring(0, indexOfEqual), value.Substring(indexOfEqual + 1));
+                }
+            }
+
+            fileSystemProvider.Initialize(configDictionary);
+
+            return fileSystemProvider;
+        }
+
+        private string GetPath(IEnumerable<object> pathOptions)
+        {
+            foreach (var item in pathOptions)
+            {
+                var option = item as CommandOption;
+                if (option != null)
+                {
+                    if (option.HasValue())
+                    {
+                        foreach (var value in option.Values)
+                        {
+                            if (!string.IsNullOrEmpty(value))
+                                return value;
+                        }
+                    }
+                }
+                else
+                {
+                    var argument = item as CommandArgument;
+                    if (argument?.Values != null)
+                    {
+                        foreach (var value in argument.Values)
+                        {
+                            if (!string.IsNullOrEmpty(value))
+                                return value;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private async Task RunAsync(Backup backup, IFileSystem sourceFileSystem, string sourcePath, IFileSystem targetFileSystem, string targetPath, CancellationToken ct)
+        {
             ct.ThrowIfCancellationRequested();
 
-            IFileSystem sourceFileSystem = null;
-            IFileSystem targetFileSystem = null;
             try
             {
-                string sourcePath;
-                string targetPath;
-
-                sourceFileSystem = GetFileSystem(configuration, "source", out sourcePath);
-                targetFileSystem = GetFileSystem(configuration, "target", out targetPath);
-
                 var sourceDirectory = await GetOrCreateRootDirectoryItemAsync(sourceFileSystem, sourcePath, ct);
                 var targetDirectory = await GetOrCreateRootDirectoryItemAsync(targetFileSystem, targetPath, ct);
 
@@ -161,66 +295,6 @@ namespace Meziantou.Backup.Console
             }
         }
 
-        private IFileSystem GetFileSystem(IConfigurationRoot configuration, string prefix, out string path)
-        {
-            string providerName = GetValue(configuration, prefix + "ProviderName", null);
-            path = GetValue(configuration, prefix + "Path", null);
-            AesVersion? aesVersion = GetValue(configuration, prefix + "AesVersion", (AesVersion?)null);
-            bool aesEncryptFileName = GetValue(configuration, prefix + "AesEncryptFileName", false);
-            bool aesEncryptDirectoryName = GetValue(configuration, prefix + "AesEncryptDirectoryName", false);
-            string aesPassword = GetValue(configuration, prefix + "AesPassword", null);
-            int? aesIterationCount = GetValue(configuration, prefix + "AesIterationCount", (int?)null);
-
-            Dictionary<string, object> providerConfiguration = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-
-            var configurationPrefix = prefix + "Configuration-";
-            var children = configuration.GetChildren();
-            foreach (var child in children)
-            {
-                if (child.Key.StartsWith(configurationPrefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    providerConfiguration[child.Key.Substring(configurationPrefix.Length)] = child.Value;
-                }
-            }
-
-            // Instanciate
-            if (providerName == null)
-                throw new Exception("Unknown ProviderName");
-
-            var type = GetType(providerName);
-            if (type == null)
-                throw new Exception("Unknown ProviderName: " + providerName);
-
-            var fileSystem = (IFileSystem)CreateInstance(type);
-            if (fileSystem == null)
-                throw new Exception("Cannot instanciate type: " + type.AssemblyQualifiedName);
-
-            fileSystem.Initialize(providerConfiguration);
-
-            // Wrap file system with AES file system
-            if (!string.IsNullOrEmpty(aesPassword))
-            {
-                var aesFileSystem = new AesFileSystem(fileSystem);
-                if (aesVersion != null)
-                {
-                    aesFileSystem.Version = aesVersion.Value;
-                }
-
-                if (aesIterationCount.HasValue)
-                {
-                    aesFileSystem.IterationCount = aesIterationCount.Value;
-                }
-
-                aesFileSystem.EncryptDirectoryName = aesEncryptDirectoryName;
-                aesFileSystem.EncryptFileName = aesEncryptFileName;
-                aesFileSystem.Password = aesPassword;
-
-                fileSystem = aesFileSystem;
-            }
-
-            return fileSystem;
-        }
-
         protected virtual object CreateInstance(Type type)
         {
             return Activator.CreateInstance(type);
@@ -228,7 +302,9 @@ namespace Meziantou.Backup.Console
 
         protected virtual Type GetType(string name)
         {
-            if (string.Equals("FileSystem", name, StringComparison.InvariantCultureIgnoreCase))
+            if (string.IsNullOrEmpty(name) ||
+                string.Equals("file", name, StringComparison.InvariantCultureIgnoreCase) ||
+                string.Equals("FileSystem", name, StringComparison.InvariantCultureIgnoreCase))
                 return Type.GetType("Meziantou.Backup.FileSystem.Physical.PhysicalFileSystem, Meziantou.Backup.FileSystem.Physical");
 
             if (string.Equals("OneDrive", name, StringComparison.InvariantCultureIgnoreCase))

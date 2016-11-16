@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Alphaleonis.Win32.Filesystem;
 using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.Physical
@@ -15,7 +15,7 @@ namespace Meziantou.Backup.FileSystem.Physical
             {
                 di = Directory.CreateDirectory(path);
             }
-
+            
             return Task.FromResult<IDirectoryInfo>(new PhysicalDirectoryInfo(di));
         }
 
