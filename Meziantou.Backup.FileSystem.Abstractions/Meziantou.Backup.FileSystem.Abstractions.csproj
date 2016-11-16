@@ -42,12 +42,14 @@
     <Compile Include="FileSystemInfoEqualityComparer.cs" />
     <Compile Include="IAuthenticable.cs" />
     <Compile Include="IDirectoryInfo.cs" />
+    <Compile Include="IHashProvider.cs" />
     <Compile Include="IFileInfo.cs" />
     <Compile Include="IFileSystem.cs" />
     <Compile Include="IFileSystemInfo.cs" />
     <Compile Include="IFullName.cs" />
     <Compile Include="ItemExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WellKnownHashAlgorithms.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
@@ -144,17 +143,13 @@ namespace Meziantou.Backup
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256) ||
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
             {
-                using (var xStream = await source.OpenReadAsync(ct).ConfigureAwait(false))
-                using (var yStream = await target.OpenReadAsync(ct).ConfigureAwait(false))
-                {
-                    var xHashTask = ComputeHashAsync(xStream, ct);
-                    var yHashTask = ComputeHashAsync(yStream, ct);
+                    var xHashTask = ComputeHashAsync(source, ct);
+                    var yHashTask = ComputeHashAsync(target, ct);
                     var xHash = await xHashTask.ConfigureAwait(false);
                     var yHash = await yHashTask.ConfigureAwait(false);
                     var diff = xHash.Zip(yHash, (a, b) => AreEqual(a.Item2, b.Item2) ? FileInfoEqualityMethods.None : a.Item1).FirstOrDefault(_ => _ != FileInfoEqualityMethods.None);
                     if (diff != FileInfoEqualityMethods.None)
                         return diff;
-                }
             }
 
             return FileInfoEqualityMethods.None;
@@ -180,12 +175,32 @@ namespace Meziantou.Backup
             return true;
         }
 
-        protected virtual async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(Stream stream, CancellationToken ct)
+        protected virtual async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(IFileInfo fileInfo, CancellationToken ct)
         {
-            var algorithms = new List<HashResult>();
-            try
+            var hashProvider = fileInfo as IHashProvider;
+            if (hashProvider != null)
             {
-                // Init algorithm
+                var algorithms = new List<Tuple<FileInfoEqualityMethods, byte[]>>();
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5))
+                    algorithms.Add(Tuple.Create(FileInfoEqualityMethods.ContentMd5, hashProvider.GetHash(WellKnownHashAlgorithms.Md5)));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha1))
+                    algorithms.Add(Tuple.Create(FileInfoEqualityMethods.ContentSha1, hashProvider.GetHash(WellKnownHashAlgorithms.Sha1)));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256))
+                    algorithms.Add(Tuple.Create(FileInfoEqualityMethods.ContentSha256, hashProvider.GetHash(WellKnownHashAlgorithms.Sha256)));
+
+                if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
+                    algorithms.Add(Tuple.Create(FileInfoEqualityMethods.ContentSha512, hashProvider.GetHash(WellKnownHashAlgorithms.Sha512)));
+
+                if (algorithms.TrueForAll(hr => hr.Item2 != null))
+                    return algorithms;
+            }
+
+            // Compute hash for missing algorithms
+            using (var stream = await fileInfo.OpenReadAsync(ct).ConfigureAwait(false))
+            {
+                var algorithms = new List<HashResult>();
                 if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5))
                     algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentMd5));
 
@@ -198,27 +213,35 @@ namespace Meziantou.Backup
                 if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
                     algorithms.Add(new HashResult(FileInfoEqualityMethods.ContentSha512));
 
-                byte[] buffer = new byte[81920];
-                int read;
-                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
+                try
+                {
+                    byte[] buffer = new byte[81920];
+                    int read;
+                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
+                    {
+                        foreach (var hashAlgorithm in algorithms)
+                        {
+                            hashAlgorithm.TransformBlock(buffer, read);
+                        }
+                    }
+
+                    foreach (var hashAlgorithm in algorithms)
+                    {
+                        hashAlgorithm.TransformFinalBlock();
+                    }
+
+                    return algorithms.Select(hr => Tuple.Create(hr.Method, hr.Hash)).ToList();
+                }
+                finally
                 {
                     foreach (var hashAlgorithm in algorithms)
                     {
-                        hashAlgorithm.TransformBlock(buffer, read);
+                        hashAlgorithm.Dispose();
                     }
-                }
-
-                return algorithms.Select(result => Tuple.Create(result.Method, result.TransformFinalBlock())).ToList();
-            }
-            finally
-            {
-                foreach (var hashAlgorithm in algorithms)
-                {
-                    hashAlgorithm.Dispose();
                 }
             }
         }
-
+        
         private async Task<IFileInfo> CopyFileAsync(IDirectoryInfo directory, IFileInfo file, CancellationToken ct)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
@@ -329,7 +352,7 @@ namespace Meziantou.Backup
 
             if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, source, target)))
                 return;
-            
+
             var sourceItemsResult = await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false);
             if (sourceItemsResult == null)
                 return;
@@ -341,7 +364,7 @@ namespace Meziantou.Backup
             // Clone collections because CreateItem or DeleteItem may change them
             var sourceItems = sourceItemsResult.ToList();
             var targetItems = targetItemResult.ToList();
-            
+
             //
             // Compute differencies
             //
@@ -418,44 +441,49 @@ namespace Meziantou.Backup
 
         private class HashResult : IDisposable
         {
-            private readonly HashAlgorithm _algorithm;
+            private HashAlgorithm _algorithm;
 
             public FileInfoEqualityMethods Method { get; }
+            public byte[] Hash { get; private set; }
 
             public HashResult(FileInfoEqualityMethods method)
             {
                 Method = method;
-                if (method.HasFlag(FileInfoEqualityMethods.ContentMd5))
-                {
-                    _algorithm = MD5.Create();
-                }
-                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha1))
-                {
-                    _algorithm = SHA1.Create();
-                }
-                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha256))
-                {
-                    _algorithm = SHA256.Create();
-                }
-                else if (method.HasFlag(FileInfoEqualityMethods.ContentSha512))
-                {
-                    _algorithm = SHA512.Create();
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(method));
-                }
             }
-
+            
             public void TransformBlock(byte[] bytes, int count)
             {
+                if (_algorithm == null)
+                {
+                    if (Method.HasFlag(FileInfoEqualityMethods.ContentMd5))
+                    {
+                        _algorithm = MD5.Create();
+                    }
+                    else if (Method.HasFlag(FileInfoEqualityMethods.ContentSha1))
+                    {
+                        _algorithm = SHA1.Create();
+                    }
+                    else if (Method.HasFlag(FileInfoEqualityMethods.ContentSha256))
+                    {
+                        _algorithm = SHA256.Create();
+                    }
+                    else if (Method.HasFlag(FileInfoEqualityMethods.ContentSha512))
+                    {
+                        _algorithm = SHA512.Create();
+                    }
+                    else
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(Method));
+                    }
+                }
+
                 _algorithm.TransformBlock(bytes, 0, count, null, 0);
             }
 
-            public byte[] TransformFinalBlock()
+            public void TransformFinalBlock()
             {
                 _algorithm.TransformFinalBlock(new byte[0], 0, 0);
-                return _algorithm.Hash;
+                Hash = _algorithm.Hash;
             }
 
             public void Dispose()

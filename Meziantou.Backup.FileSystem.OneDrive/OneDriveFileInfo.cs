@@ -11,7 +11,7 @@ using Meziantou.OneDrive;
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
     [DebuggerDisplay("{FullName}")]
-    public class OneDriveFileInfo : IDirectoryInfo, IFileInfo, IFullName
+    public class OneDriveFileInfo : IDirectoryInfo, IFileInfo, IFullName, IHashProvider
     {
         private readonly OneDriveItem _item;
 
@@ -71,6 +71,23 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         public Task<Stream> OpenReadAsync(CancellationToken ct)
         {
             return _item.DownloadAsync(ct);
+        }
+
+        public byte[] GetHash(string algorithmName)
+        {
+            if (string.Equals(WellKnownHashAlgorithms.Sha1, algorithmName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_item?.File?.Hashes.Sha1Hash != null)
+                    return Convert.FromBase64String(_item.File.Hashes.Sha1Hash);
+            }
+
+            if (string.Equals(WellKnownHashAlgorithms.Crc32, algorithmName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_item?.File?.Hashes.Crc32Hash != null)
+                    return Convert.FromBase64String(_item.File.Hashes.Crc32Hash);
+            }
+
+            return null;
         }
     }
 }
