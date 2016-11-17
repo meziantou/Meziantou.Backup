@@ -1,33 +1,25 @@
 # About `Meziantou.Backup`
 
-Copy your files from a source to a destination.
+Backup your files from a source to a destination (File System, OneDrive, SFTP).
 For instance you can copy your local files to your OneDrive account or an external disk.
 
 # Usage
 
 ```cmd
-Meziantou.Backup.Console.exe
-    sourceProviderName=<provider name>
-    sourcePath=<path>
-    sourceConfiguration-<name>=<value>
-    targetProviderName=<provider name>
-    targetPath=<path>
-    targetConfiguration-<name>=<value>
+Meziantou.Backup.Console.exe backup "d:\Data" "onedrive://backup/" --ignoreErrors --targetAesAskPassword
 ```
 
-- `ProviderName`: Currently it supports `FileSystem` and `OneDrive`
-- `Path`: Path to the directory to synchronize
-- `Configuration-<name>`: Key-Value to configure the provider
-- `EqualityMethods` (optional, default: `LastWriteTime | Length`): Methods to compare two files. Valid values: `Length`, `LastWriteTime`, `Content`, `ContentMd5`, `ContentSha1`, `ContentSha256`, `ContentSha512`
-- `RetryCount` (optional, default: `3`): Number of attempts to execute a file operation
-- `ContinueOnError` (optional, default: `true`)
-- `CanCreateDirectories` (optional, default: `true`)
-- `CanDeleteDirectories` (optional, default: `false`)
-- `CanCreateFiles` (optional, default: `true`)
-- `CanUpdateFiles` (optional, default: `true`)
-- `CanDeleteFiles` (optional, default: `false`)
+Use `--help` to show all options
 
 # Providers
+
+Currently, 3 file systems are supported. Each provider has specific configuration options.
+Use `-sc conf=value` (source file system configuration) or `-tc conf=value` (target file system configuration) to set a configuration value
+
+For instance:
+```cmd
+Meziantou.Backup.Console.exe backup "d:\Data" "onedrive://backup/" -tc UploadChunkSize=1024
+```
 
 ## FileSystem
 
@@ -42,29 +34,43 @@ Configuration:
 Configuration:
 
 - `Path`: Path from the root of the user's root path. The directory is created if needed. Example: `/Backup/Musics/`
-- `Configuration-ApplicationName` (optional, default `null`): This allows to store the credential (Refresh token) in the [Windows Credential Manager](http://windows.microsoft.com/en-us/windows7/what-is-credential-manager) so you don't need to enter your credential every time. Use a different name for different OneDrive account. The name is not related to your OneDrive account.
-- `Configuration-AuthenticateOnUnauthenticatedError` (optional, default `true`): Re-authenticate when the API call fails with error code `Unauthenticated`
+- `ApplicationName` (optional, default `null`): This allows to store the credential (Refresh token) in the [Windows Credential Manager](http://windows.microsoft.com/en-us/windows7/what-is-credential-manager) so you don't need to enter your credential every time. Use a different name for different OneDrive account. The name is not related to your OneDrive account.
+- `AuthenticateOnUnauthenticatedError` (optional, default `true`): Re-authenticate when the API call fails with error code `Unauthenticated`
+- `UploadChunkSize` (optional, default 5MB): The size of the file chunks
 
 ## SFTP
 
 Configuration:
     
-- `Path`: Path from the root. The directory is created if needed. Example: `/Backup/Musics/`
-- `Configuration-Host`: SFTP host (ex: sample.com)
-- `Configuration-Port` (optional, default `22`)
-- `Configuration-Username`
-- `Configuration-Password`
+- `Path`: Path from the root. The directory is created if needed. Example: `/Backup/sample/`
+- `Host`: SFTP host (ex: sample.com)
+- `Port` (optional, default `22`)
+- `Username`
+- `Password`
 
-## AES Encryption
+# AES Encryption
 
 You can encrypt file content and name (optional) using AES128 or AES256.
 
 ```cmd
-targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true
+--sourceAesPassword <PASSWORD>
+--sourceAesPasswordName <NAME>
+--sourceAesAskPassword
+--sourceAesEncryptFileNames
+--sourceAesEncryptDirectoryNames
+
+--targetAesMethod <METHOD>
+--targetAesPassword <PASSWORD>
+--targetAesPasswordName <NAME>
+--targetAesAskPassword
+--targetAesEncryptFileNames
+--targetAesEncryptDirectoryNames
 ```
 
 - `AesMethod`: `Aes128` or `Aes256`
 - `AesPassword`: Password to encrypt or decrypt
+- `AesAskPassword`: Enter the password in the console
+- `AesPasswordName`: Read the password from the creadential manager. If combined with `--aesAskPassword`, the password is prompted and save in the credential manager.
 - `AesEncryptFileName`: Indicates whether file names must be encrypted
 - `AesEncryptDirectoryName`: Indicates whether directory names must be encrypted
 
@@ -77,12 +83,10 @@ targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true ta
 
 From the local file system to OneDrive:
 ```cmd
-Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou"
+Meziantou.Backup.Console.exe "C:\Users\meziantou\ToBeBackedUp" "onedrive://Backup/meziantou/" -tc ApplicationName=Meziantou.Backup.OneDrive.Meziantou
 ```
 
 From the local file system to OneDrive using `AES 256` with the password `123456`:
 ```cmd
-Meziantou.Backup.Console.exe sourceProviderName=FileSystem sourcePath="C:\Users\meziantou\ToBeBackedUp" targetProviderName=OneDrive targetPath="/Backup/meziantou/" targetConfiguration-ApplicationName="Meziantou.Backup.OneDrive.Meziantou" targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true EqualityMethods=LastWriteTime
+Meziantou.Backup.Console.exe "C:\Users\meziantou\ToBeBackedUp" "onedrive://Backup/meziantou/" -tc ApplicationName="Meziantou.Backup.OneDrive.Meziantou" targetAesMethod=Aes256 targetAesPassword=123456 targetAesEncryptFileName=true targetAesEncryptDirectoryName=true EqualityMethods=LastWriteTime
 ```
-
-
