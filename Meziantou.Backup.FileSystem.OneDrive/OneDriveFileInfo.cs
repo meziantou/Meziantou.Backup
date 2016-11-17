@@ -15,12 +15,16 @@ namespace Meziantou.Backup.FileSystem.OneDrive
     {
         private readonly OneDriveItem _item;
 
-        internal OneDriveFileInfo(OneDriveItem item)
+        internal OneDriveFileInfo(OneDriveFileSystem fileSystem, OneDriveItem item)
         {
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
             if (item == null) throw new ArgumentNullException(nameof(item));
+
+            FileSystem = fileSystem;
             _item = item;
         }
 
+        public OneDriveFileSystem FileSystem { get; }
         public string Name => _item.Name;
 
         public bool IsDirectory => _item.Folder != null;
@@ -47,14 +51,13 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         public async Task<IReadOnlyCollection<IFileSystemInfo>> GetItemsAsync(CancellationToken ct)
         {
             var oneDriveItems = await _item.GetChildrenAsync(ct).ConfigureAwait(false);
-            return oneDriveItems.Select(item => new OneDriveFileInfo(item)).ToList();
+            return oneDriveItems.Select(item => new OneDriveFileInfo(FileSystem, item)).ToList();
         }
 
         public async Task<IFileInfo> CreateFileAsync(string name, Stream stream, long length, CancellationToken ct)
         {
-            const int chunckSize = 1 * 1024 * 1024;  // 1MB
-            var oneDriveItem = await _item.CreateFileAsync(name, stream, length, chunckSize, OnChunkErrorHandler, ct).ConfigureAwait(false);
-            return new OneDriveFileInfo(oneDriveItem);
+            var oneDriveItem = await _item.CreateFileAsync(name, stream, length, FileSystem.UploadChunkSize, OnChunkErrorHandler, ct).ConfigureAwait(false);
+            return new OneDriveFileInfo(FileSystem, oneDriveItem);
         }
 
         private bool OnChunkErrorHandler(ChunkUploadErrorEventArgs chunkUploadErrorEventArgs)
@@ -65,7 +68,7 @@ namespace Meziantou.Backup.FileSystem.OneDrive
         public async Task<IDirectoryInfo> CreateDirectoryAsync(string name, CancellationToken ct)
         {
             var item = await _item.CreateDirectoryAsync(name, ct).ConfigureAwait(false);
-            return new OneDriveFileInfo(item);
+            return new OneDriveFileInfo(FileSystem, item);
         }
 
         public Task<Stream> OpenReadAsync(CancellationToken ct)

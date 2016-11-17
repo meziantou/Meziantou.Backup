@@ -21,10 +21,12 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             Client = client;
         }
 
+        public int UploadChunkSize { get; set; } = 5 * 1024 * 1024;
+
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
             var item = await Client.CreateDirectoryAsync(path, ct).ConfigureAwait(false);
-            return new OneDriveFileInfo(item);
+            return new OneDriveFileInfo(this, item);
         }
 
         public void Initialize(IDictionary<string, object> data)
@@ -51,6 +53,19 @@ namespace Meziantou.Backup.FileSystem.OneDrive
                     if (bool.TryParse(value, out b))
                     {
                         Client.AuthenticateOnUnauthenticatedError = b;
+                    }
+                }
+            }
+
+            if (data.TryGetValue("UploadChunkSize", out o))
+            {
+                var value = o as string;
+                if (value != null)
+                {
+                    int size;
+                    if (int.TryParse(value, out size))
+                    {
+                        UploadChunkSize = size;
                     }
                 }
             }
