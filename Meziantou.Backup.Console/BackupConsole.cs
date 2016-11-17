@@ -96,28 +96,29 @@ namespace Meziantou.Backup.Console
                 var sourceConfigurationOptions = command.Option("-sc|--sourceConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
                 var targetConfigurationOptions = command.Option("-tc|--targetConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
 
-                var equalityOptions = command.Option("--equality <EqualityMethods>", "", CommandOptionType.SingleValue);
-                var retryCountOptions = command.Option("--retry <RetryCount>", "", CommandOptionType.SingleValue);
-                var createDirectoriesOptions = command.Option("--createDirectories <CanCreateDirectories>", "", CommandOptionType.SingleValue);
-                var deleteDirectoriesOptions = command.Option("--deleteDirectories <CanDeleteDirectories>", "", CommandOptionType.SingleValue);
-                var createFilesOptions = command.Option("--createFiles <CanCreateFiles>", "", CommandOptionType.SingleValue);
-                var updateFilesOptions = command.Option("--updateFiles <CanUpdateFiles>", "", CommandOptionType.SingleValue);
-                var deleteFilesOptions = command.Option("--deleteFiles <CanDeleteFiles>", "", CommandOptionType.SingleValue);
-                var continueOnErrorOptions = command.Option("--ignoreErrors", "", CommandOptionType.NoValue);
+                var keepHistoryOption = command.Option("--keepHistory", "", CommandOptionType.NoValue);
+                var equalityOption = command.Option("--equality <EqualityMethods>", "", CommandOptionType.SingleValue);
+                var retryCountOption = command.Option("--retry <RetryCount>", "", CommandOptionType.SingleValue);
+                var createDirectoryOption = command.Option("--createDirectories <CanCreateDirectories>", "", CommandOptionType.SingleValue);
+                var deleteDirectoriesOption = command.Option("--deleteDirectories <CanDeleteDirectories>", "", CommandOptionType.SingleValue);
+                var createFilesOption = command.Option("--createFiles <CanCreateFiles>", "", CommandOptionType.SingleValue);
+                var updateFilesOption = command.Option("--updateFiles <CanUpdateFiles>", "", CommandOptionType.SingleValue);
+                var deleteFilesOption = command.Option("--deleteFiles <CanDeleteFiles>", "", CommandOptionType.SingleValue);
+                var continueOnErrorOption = command.Option("--ignoreErrors", "", CommandOptionType.NoValue);
 
-                var sourceAesMethod = command.Option("--sourceAesMethod <METHOD>", "", CommandOptionType.SingleValue);
-                var sourceAesPassword = command.Option("--sourceAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
-                var sourceAesPasswordName = command.Option("--sourceAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
-                var sourceAesAskPassword = command.Option("--sourceAesAskPassword", "", CommandOptionType.NoValue);
-                var sourceAesEncryptFileNames = command.Option("--sourceAesEncryptFileNames", "", CommandOptionType.NoValue);
-                var sourceAesEncryptDirectoryNames = command.Option("--sourceAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+                var sourceAesMethodOption = command.Option("--sourceAesMethod <METHOD>", "", CommandOptionType.SingleValue);
+                var sourceAesPasswordOption = command.Option("--sourceAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var sourceAesPasswordNameOption = command.Option("--sourceAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
+                var sourceAesAskPasswordOption = command.Option("--sourceAesAskPassword", "", CommandOptionType.NoValue);
+                var sourceAesEncryptFileNamesOption = command.Option("--sourceAesEncryptFileNames", "", CommandOptionType.NoValue);
+                var sourceAesEncryptDirectoryNamesOption = command.Option("--sourceAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
 
-                var targetAesMethod = command.Option("--targetAesMethod <METHOD>", "", CommandOptionType.SingleValue);
-                var targetAesPassword = command.Option("--targetAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
-                var targetAesPasswordName = command.Option("--targetAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
-                var targetAesAskPassword = command.Option("--targetAesAskPassword", "", CommandOptionType.NoValue);
-                var targetAesEncryptFileNames = command.Option("--targetAesEncryptFileNames", "", CommandOptionType.NoValue);
-                var targetAesEncryptDirectoryNames = command.Option("--targetAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+                var targetAesMethodOption = command.Option("--targetAesMethod <METHOD>", "", CommandOptionType.SingleValue);
+                var targetAesPasswordOption = command.Option("--targetAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
+                var targetAesPasswordNameOption = command.Option("--targetAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
+                var targetAesAskPasswordOption = command.Option("--targetAesAskPassword", "", CommandOptionType.NoValue);
+                var targetAesEncryptFileNamesOption = command.Option("--targetAesEncryptFileNames", "", CommandOptionType.NoValue);
+                var targetAesEncryptDirectoryNamesOption = command.Option("--targetAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
 
                 var testConfig = command.Option("--test-config", "for testing purpose only", CommandOptionType.NoValue);
 
@@ -128,14 +129,15 @@ namespace Meziantou.Backup.Console
                     backup.Error += Backup_Error;
                     backup.Copying += Backup_Copying;
 
-                    backup.EqualityMethods = GetValue(equalityOptions, FileInfoEqualityMethods.Default);
-                    backup.RetryCount = GetValue(retryCountOptions, 3);
-                    backup.CanCreateDirectories = GetValue(createDirectoriesOptions, true);
-                    backup.CanDeleteDirectories = GetValue(deleteDirectoriesOptions, false);
-                    backup.CanCreateFiles = GetValue(createFilesOptions, true);
-                    backup.CanUpdateFiles = GetValue(updateFilesOptions, true);
-                    backup.CanDeleteFiles = GetValue(deleteFilesOptions, false);
-                    backup.ContinueOnError = GetValue(continueOnErrorOptions, false);
+                    backup.EqualityMethods = GetValue(equalityOption, FileInfoEqualityMethods.Default);
+                    backup.RetryCount = GetValue(retryCountOption, 3);
+                    backup.CanCreateDirectories = GetValue(createDirectoryOption, true);
+                    backup.CanDeleteDirectories = GetValue(deleteDirectoriesOption, false);
+                    backup.CanCreateFiles = GetValue(createFilesOption, true);
+                    backup.CanUpdateFiles = GetValue(updateFilesOption, true);
+                    backup.CanDeleteFiles = GetValue(deleteFilesOption, false);
+                    backup.ContinueOnError = GetValue(continueOnErrorOption, false);
+                    backup.KeepHistory = GetValue(keepHistoryOption, false);
 
                     var summary = new BackupSummary(backup);
                     try
@@ -150,11 +152,11 @@ namespace Meziantou.Backup.Console
                         if (targetFileSystem == null)
                             return 2;
 
-                        sourceFileSystem = CreateAesFileSystem(sourceFileSystem, sourceAesMethod, sourceAesPassword, sourceAesPasswordName, sourceAesAskPassword, sourceAesEncryptFileNames, sourceAesEncryptDirectoryNames);
+                        sourceFileSystem = CreateAesFileSystem(sourceFileSystem, sourceAesMethodOption, sourceAesPasswordOption, sourceAesPasswordNameOption, sourceAesAskPasswordOption, sourceAesEncryptFileNamesOption, sourceAesEncryptDirectoryNamesOption);
                         if (sourceFileSystem == null)
                             return 3;
 
-                        targetFileSystem = CreateAesFileSystem(targetFileSystem, targetAesMethod, targetAesPassword, targetAesPasswordName, targetAesAskPassword, targetAesEncryptFileNames, targetAesEncryptDirectoryNames);
+                        targetFileSystem = CreateAesFileSystem(targetFileSystem, targetAesMethodOption, targetAesPasswordOption, targetAesPasswordNameOption, targetAesAskPasswordOption, targetAesEncryptFileNamesOption, targetAesEncryptDirectoryNamesOption);
                         if (targetFileSystem == null)
                             return 4;
 

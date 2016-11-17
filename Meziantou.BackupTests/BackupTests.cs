@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Meziantou.Backup;
+using Meziantou.Backup.FileSystem.Abstractions;
 using Meziantou.Backup.FileSystem.InMemory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -36,7 +37,7 @@ namespace Meziantou.BackupTests
 
             var targetProvider = new InMemoryFileSystem();
             targetProvider.AddItem("item.png");
-            
+
             var backup = new Backup.Backup();
             backup.CanDeleteFiles = true;
 
@@ -64,7 +65,7 @@ namespace Meziantou.BackupTests
             targetProvider.AddItem("Sample/item2.png");
             targetProvider.AddItem("Sample/item4.png");
             targetProvider.AddItem("Sample/sub1/item1");
-            
+
             var backup = new Backup.Backup();
 
             // Act
@@ -91,7 +92,7 @@ namespace Meziantou.BackupTests
             targetProvider.AddItem("item.png", new byte[] { 1, 2, 3 });
 
             var backup = new Backup.Backup();
-            
+
             // Act
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
@@ -118,7 +119,7 @@ namespace Meziantou.BackupTests
             // Assert
             Assert.AreEqual(2, targetProvider.GetFile("item.png").Length);
         }
-        
+
         [TestMethod]
         public void TestMethod6()
         {
@@ -173,7 +174,85 @@ namespace Meziantou.BackupTests
             CollectionAssert.AreEqual(sourceFileContent, targetProvider.GetFile("item.png").Content);
         }
 
-        private byte[] HexaToBytes(string str)
+        [TestMethod]
+        public void TestMethod8()
+        {
+            // Arrange
+            var sourceProvider = new InMemoryFileSystem();
+            sourceProvider.AddItem("Sample/item.png", new byte[] { 0 });
+            sourceProvider.AddItem("Sample/item2.png");
+
+            var targetProvider = new InMemoryFileSystem();
+            targetProvider.AddItem("Sample/item.png", new byte[] { 1 }); // Different from source
+
+            var backup = new Backup.Backup();
+            backup.EqualityMethods = FileInfoEqualityMethods.Content;
+            backup.KeepHistory = true;
+
+            // Act
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
+
+            // Assert
+            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.HasItem("Sample/item2.png"));
+            var children = targetProvider.GetDirectory("/Sample/").Children;
+            Assert.IsNotNull(children.First(f => f.IsFile() && f.Name.StartsWith("item.png.")));
+        }
+
+        [TestMethod]
+        public void TestMethod9()
+        {
+            // Arrange
+            var sourceProvider = new InMemoryFileSystem();
+            sourceProvider.AddItem("Sample/item.png", new byte[] { 1 });
+            sourceProvider.AddItem("Sample/item2.png");
+
+            var targetProvider = new InMemoryFileSystem();
+            targetProvider.AddItem("Sample/item.png", new byte[] { 0 });
+            targetProvider.AddItem("Sample/item.png.20160101000000.backuphistory", new byte[] { 1 }); // Different from source
+
+            var backup = new Backup.Backup();
+            backup.EqualityMethods = FileInfoEqualityMethods.Content;
+            backup.KeepHistory = true;
+
+            // Act
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
+
+            // Assert
+            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.HasItem("Sample/item.png.20160101000000.backuphistory"));
+            Assert.IsTrue(targetProvider.HasItem("Sample/item2.png"));
+            var children = targetProvider.GetDirectory("/Sample/").Children;
+            Assert.AreEqual(3, children.Count);
+        }
+        
+        [TestMethod]
+        public void TestMethod10()
+        {
+            // Arrange
+            var sourceProvider = new InMemoryFileSystem();
+            sourceProvider.AddItem("Sample/item.png", new byte[] { 4 });
+
+            var targetProvider = new InMemoryFileSystem();
+            targetProvider.AddItem("Sample/item.png", new byte[] { 0 });
+            targetProvider.AddItem("Sample/item.png.20160101000000.backuphistory", new byte[] { 1 });
+            targetProvider.AddItem("Sample/item.png.20160102000000.backuphistory", new byte[] { 2 });
+            targetProvider.AddItem("Sample/item.png.20160103000000.backuphistory", new byte[] { 3 });
+
+            var backup = new Backup.Backup();
+            backup.EqualityMethods = FileInfoEqualityMethods.Content;
+            backup.KeepHistory = true;
+
+            // Act
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
+
+            // Assert
+            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
+            var children = targetProvider.GetDirectory("/Sample/").Children;
+            Assert.AreEqual(5, children.Count);
+        }
+
+        private static byte[] HexaToBytes(string str)
         {
             return Enumerable.Range(0, str.Length / 2).Select(x => Convert.ToByte(str.Substring(x * 2, 2), 16)).ToArray();
         }

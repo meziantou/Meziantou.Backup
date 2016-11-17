@@ -11,6 +11,17 @@ namespace Meziantou.Backup.FileSystem.Abstractions
     {
         private static readonly FileSystemInfoEqualityComparer EqualityComparer = new FileSystemInfoEqualityComparer();
 
+        public static IEnumerable<HistoryFile> FindHistoryItems<TFileSystemInfo, TFileInfo>(this IEnumerable<TFileSystemInfo> items, TFileInfo originalItem)
+            where TFileSystemInfo : IFileSystemInfo
+            where TFileInfo : IFileInfo
+        {
+            return items
+                .OfType<IFileInfo>()
+                .Where(item => item.IsFile())
+                .Select(HistoryFile.Parse)
+                .Where(_ => _ != null && _.IsSame(originalItem));
+        }
+
         public static T Get<T>(this IEnumerable<T> items, T item) where T : IFileSystemInfo
         {
             return Get(items, item, EqualityComparer);

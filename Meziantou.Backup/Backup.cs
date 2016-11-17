@@ -17,6 +17,7 @@ namespace Meziantou.Backup
         public bool CanCreateFiles { get; set; } = true;
         public bool CanDeleteDirectories { get; set; }
         public bool CanCreateDirectories { get; set; } = true;
+        public bool KeepHistory { get; set; }
         public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 
         public event EventHandler<BackupActionEventArgs> Action;
@@ -143,13 +144,13 @@ namespace Meziantou.Backup
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha256) ||
                 EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentSha512))
             {
-                    var xHashTask = ComputeHashAsync(source, ct);
-                    var yHashTask = ComputeHashAsync(target, ct);
-                    var xHash = await xHashTask.ConfigureAwait(false);
-                    var yHash = await yHashTask.ConfigureAwait(false);
-                    var diff = xHash.Zip(yHash, (a, b) => AreEqual(a.Item2, b.Item2) ? FileInfoEqualityMethods.None : a.Item1).FirstOrDefault(_ => _ != FileInfoEqualityMethods.None);
-                    if (diff != FileInfoEqualityMethods.None)
-                        return diff;
+                var xHashTask = ComputeHashAsync(source, ct);
+                var yHashTask = ComputeHashAsync(target, ct);
+                var xHash = await xHashTask.ConfigureAwait(false);
+                var yHash = await yHashTask.ConfigureAwait(false);
+                var diff = xHash.Zip(yHash, (a, b) => AreEqual(a.Item2, b.Item2) ? FileInfoEqualityMethods.None : a.Item1).FirstOrDefault(_ => _ != FileInfoEqualityMethods.None);
+                if (diff != FileInfoEqualityMethods.None)
+                    return diff;
             }
 
             return FileInfoEqualityMethods.None;
@@ -241,8 +242,8 @@ namespace Meziantou.Backup
                 }
             }
         }
-        
-        private async Task<IFileInfo> CopyFileAsync(IDirectoryInfo directory, IFileInfo file, CancellationToken ct)
+
+        private async Task<IFileInfo> CopyFileAsync(IDirectoryInfo directory, IFileInfo file, string targetFileName, CancellationToken ct)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (file == null) throw new ArgumentNullException(nameof(file));
@@ -258,7 +259,7 @@ namespace Meziantou.Backup
                         OnCopying(new FileCopyingEventArgs(file, directory, currentPosition, file.Length));
                     };
 
-                    return await directory.CreateFileAsync(file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
+                    return await directory.CreateFileAsync(targetFileName ?? file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
                 }
             }
         }
@@ -273,7 +274,7 @@ namespace Meziantou.Backup
                     if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceItem, targetItem)))
                         return;
 
-                    var fi = await RetryAsync(() => CopyFileAsync(targetItem, file, ct), ct).ConfigureAwait(false);
+                    var fi = await RetryAsync(() => CopyFileAsync(targetItem, file, null, ct), ct).ConfigureAwait(false);
                     OnAction(new BackupActionEventArgs(BackupAction.Created, file, fi));
                 }
             }
@@ -300,15 +301,15 @@ namespace Meziantou.Backup
             }
         }
 
-        private async Task UpdateItemAsync(IFileInfo sourceItem, IDirectoryInfo targetItem, FileInfoEqualityMethods diff, CancellationToken ct)
+        private async Task UpdateItemAsync(IFileInfo sourceFile, IDirectoryInfo targetDirectory, string targetFileName, FileInfoEqualityMethods diff, CancellationToken ct)
         {
             if (CanUpdateFiles)
             {
-                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceItem, targetItem, diff)))
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceFile, targetDirectory, diff)))
                     return;
 
-                var fi = await RetryAsync(() => CopyFileAsync(targetItem, sourceItem, ct), ct).ConfigureAwait(false);
-                OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceItem, fi, diff));
+                var fi = await RetryAsync(() => CopyFileAsync(targetDirectory, sourceFile, targetFileName, ct), ct).ConfigureAwait(false);
+                OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceFile, fi, diff));
             }
         }
 
@@ -384,10 +385,26 @@ namespace Meziantou.Backup
                 var targetFileItem = targetItem as IFileInfo;
                 if (sourceFileItem != null && targetFileItem != null)
                 {
+                    if (KeepHistory)
+                    {
+                        var historyFiles = targetItems.FindHistoryItems(targetFileItem).ToList();
+                        if (historyFiles.Any())
+                        {
+                            var historyFile = historyFiles.Max();
+                            targetFileItem = historyFile.File;
+                        }
+                    }
+
                     var diff = await AreEqualAsync(sourceFileItem, targetFileItem, ct).ConfigureAwait(false);
                     if (diff != FileInfoEqualityMethods.None)
                     {
-                        await UpdateItemAsync(sourceFileItem, target, diff, ct).ConfigureAwait(false);
+                        string fileName = null;
+                        if (KeepHistory)
+                        {
+                            fileName = HistoryFile.ComputeFileName(targetFileItem.Name, DateTime.UtcNow);
+                        }
+
+                        await UpdateItemAsync(sourceFileItem, target, fileName, diff, ct).ConfigureAwait(false);
                         continue;
                     }
                 }
@@ -450,7 +467,7 @@ namespace Meziantou.Backup
             {
                 Method = method;
             }
-            
+
             public void TransformBlock(byte[] bytes, int count)
             {
                 if (_algorithm == null)
