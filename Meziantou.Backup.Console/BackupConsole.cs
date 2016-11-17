@@ -96,29 +96,29 @@ namespace Meziantou.Backup.Console
                 var sourceConfigurationOptions = command.Option("-sc|--sourceConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
                 var targetConfigurationOptions = command.Option("-tc|--targetConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
 
-                var keepHistoryOption = command.Option("--keepHistory", "", CommandOptionType.NoValue);
-                var equalityOption = command.Option("--equality <EqualityMethods>", "", CommandOptionType.SingleValue);
-                var retryCountOption = command.Option("--retry <RetryCount>", "", CommandOptionType.SingleValue);
-                var createDirectoryOption = command.Option("--createDirectories <CanCreateDirectories>", "", CommandOptionType.SingleValue);
-                var deleteDirectoriesOption = command.Option("--deleteDirectories <CanDeleteDirectories>", "", CommandOptionType.SingleValue);
-                var createFilesOption = command.Option("--createFiles <CanCreateFiles>", "", CommandOptionType.SingleValue);
-                var updateFilesOption = command.Option("--updateFiles <CanUpdateFiles>", "", CommandOptionType.SingleValue);
-                var deleteFilesOption = command.Option("--deleteFiles <CanDeleteFiles>", "", CommandOptionType.SingleValue);
-                var continueOnErrorOption = command.Option("--ignoreErrors", "", CommandOptionType.NoValue);
+                var keepHistoryOption = command.Option("--keepHistory", "Preserve all versions of a file in the target file system (sufix the file name with the utc date)", CommandOptionType.NoValue);
+                var equalityOption = command.Option("--equality <EqualityMethods>", "Length, LastWriteTime, Content, ContentMd5, ContentSha1, ContentSha256, ContentSha512", CommandOptionType.SingleValue);
+                var createDirectoryOption = command.Option("--createDirectories <TRUE,FALSE>", "Can create directories in the target file system", CommandOptionType.SingleValue);
+                var deleteDirectoriesOption = command.Option("--deleteDirectories <TRUE,FALSE>", "Can delete directories in the target file system", CommandOptionType.SingleValue);
+                var createFilesOption = command.Option("--createFiles <TRUE,FALSE>", "Can create files in the target file system", CommandOptionType.SingleValue);
+                var updateFilesOption = command.Option("--updateFiles <TRUE,FALSE>", "Can update files in the target file system", CommandOptionType.SingleValue);
+                var deleteFilesOption = command.Option("--deleteFiles <TRUE,FALSE>", "Can delete files in the target file system", CommandOptionType.SingleValue);
+                var retryCountOption = command.Option("--retry <RetryCount>", "Number of attempts of an operation", CommandOptionType.SingleValue);
+                var continueOnErrorOption = command.Option("--ignoreErrors", "continue on error", CommandOptionType.NoValue);
 
-                var sourceAesMethodOption = command.Option("--sourceAesMethod <METHOD>", "", CommandOptionType.SingleValue);
-                var sourceAesPasswordOption = command.Option("--sourceAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
-                var sourceAesPasswordNameOption = command.Option("--sourceAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
-                var sourceAesAskPasswordOption = command.Option("--sourceAesAskPassword", "", CommandOptionType.NoValue);
-                var sourceAesEncryptFileNamesOption = command.Option("--sourceAesEncryptFileNames", "", CommandOptionType.NoValue);
-                var sourceAesEncryptDirectoryNamesOption = command.Option("--sourceAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+                var sourceAesMethodOption = command.Option("--sourceAesMethod <METHOD>", "AES128, AES256", CommandOptionType.SingleValue);
+                var sourceAesPasswordOption = command.Option("--sourceAesPassword <PASSWORD>", "Password to decrypt files", CommandOptionType.SingleValue);
+                var sourceAesPasswordNameOption = command.Option("--sourceAesPasswordName <NAME>", "Name of the application in the Windows Credential Manager", CommandOptionType.SingleValue);
+                var sourceAesAskPasswordOption = command.Option("--sourceAesAskPassword", "Ask for password", CommandOptionType.NoValue);
+                var sourceAesEncryptFileNamesOption = command.Option("--sourceAesEncryptFileNames", "Decrypt file names", CommandOptionType.NoValue);
+                var sourceAesEncryptDirectoryNamesOption = command.Option("--sourceAesEncryptDirectoryNames", "Decrypt directory names", CommandOptionType.NoValue);
 
-                var targetAesMethodOption = command.Option("--targetAesMethod <METHOD>", "", CommandOptionType.SingleValue);
-                var targetAesPasswordOption = command.Option("--targetAesPassword <PASSWORD>", "", CommandOptionType.SingleValue);
-                var targetAesPasswordNameOption = command.Option("--targetAesPasswordName <NAME>", "", CommandOptionType.SingleValue);
-                var targetAesAskPasswordOption = command.Option("--targetAesAskPassword", "", CommandOptionType.NoValue);
-                var targetAesEncryptFileNamesOption = command.Option("--targetAesEncryptFileNames", "", CommandOptionType.NoValue);
-                var targetAesEncryptDirectoryNamesOption = command.Option("--targetAesEncryptDirectoryNames", "", CommandOptionType.NoValue);
+                var targetAesMethodOption = command.Option("--targetAesMethod <METHOD>", "AES128, AES256", CommandOptionType.SingleValue);
+                var targetAesPasswordOption = command.Option("--targetAesPassword <PASSWORD>", "Password to encrypt files", CommandOptionType.SingleValue);
+                var targetAesPasswordNameOption = command.Option("--targetAesPasswordName <NAME>", "Name of the application in the Windows Credential Manager", CommandOptionType.SingleValue);
+                var targetAesAskPasswordOption = command.Option("--targetAesAskPassword", "Ask for password", CommandOptionType.NoValue);
+                var targetAesEncryptFileNamesOption = command.Option("--targetAesEncryptFileNames", "Encrypt file names", CommandOptionType.NoValue);
+                var targetAesEncryptDirectoryNamesOption = command.Option("--targetAesEncryptDirectoryNames", "Encrypt directory names", CommandOptionType.NoValue);
 
                 var testConfig = command.Option("--test-config", "for testing purpose only", CommandOptionType.NoValue);
 
@@ -204,10 +204,11 @@ namespace Meziantou.Backup.Console
             if (!password.HasValue() && !askPassword.HasValue() && !passwordName.HasValue())
                 return fileSystem;
 
+            string applicationName = null;
             string pwd = GetValue(password, (string)null);
             if (string.IsNullOrEmpty(pwd))
             {
-                var applicationName = GetValue(passwordName, null);
+                applicationName = GetValue(passwordName, null);
                 if (!string.IsNullOrEmpty(applicationName))
                 {
                     var cred = CredentialManager.ReadCredential(applicationName);
@@ -223,6 +224,12 @@ namespace Meziantou.Backup.Console
                 System.Console.Write("Enter password: ");
                 pwd = GetPassword();
                 System.Console.WriteLine();
+
+                // Save password
+                if (!string.IsNullOrEmpty(applicationName) && !string.IsNullOrEmpty(pwd))
+                {
+                    CredentialManager.WriteCredential(applicationName, "", pwd);
+                }
             }
 
             if (string.IsNullOrEmpty(pwd))
