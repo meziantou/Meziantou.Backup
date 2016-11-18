@@ -1,7 +1,7 @@
 # About `Meziantou.Backup`
 
 Backup your files from a source to a destination (File System, OneDrive, SFTP).
-For instance you can copy your local files to your OneDrive account or an external disk.
+For instance you can copy your local files to your OneDrive account, or an external hard disk, or an USB flash drive.
 
 # Usage
 
@@ -13,8 +13,8 @@ Use `--help` to show all options
 
 # Providers
 
-Currently, 3 file systems are supported. Each provider has specific configuration options.
-Use `-sc conf=value` (source file system configuration) or `-tc conf=value` (target file system configuration) to set a configuration value
+Currently, 3 file systems are supported: Local File System, OneDrive, SFTP. Each provider has specific configuration options.
+Use `-sc conf=value` (source file system configuration) or `-tc setting=value` (target file system configuration) to set a setting value
 
 For instance:
 ```cmd
@@ -77,7 +77,6 @@ You can encrypt file content and name (optional) using AES128 or AES256.
 *Note 1: you can also decrypt files if you replace `target` by `source`*
 
 *Note 2: The file length of an encrypted file cannot be computed correctly so you should not use it to compare files. Instead you may want to use the `LastWriteTime`: `EqualityMethods=LastWriteTime`*
-
 
 # Examples
 
