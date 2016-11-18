@@ -187,7 +187,8 @@ namespace Meziantou.BackupTests
 
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.Content;
-            backup.KeepHistory = true;
+            backup.ReadHistory = true;
+            backup.WriteHistory = true;
 
             // Act
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
@@ -213,7 +214,8 @@ namespace Meziantou.BackupTests
 
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.Content;
-            backup.KeepHistory = true;
+            backup.ReadHistory = true;
+            backup.WriteHistory = true;
 
             // Act
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
@@ -241,7 +243,8 @@ namespace Meziantou.BackupTests
 
             var backup = new Backup.Backup();
             backup.EqualityMethods = FileInfoEqualityMethods.Content;
-            backup.KeepHistory = true;
+            backup.ReadHistory = true;
+            backup.WriteHistory = true;
 
             // Act
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();

@@ -17,7 +17,8 @@ namespace Meziantou.Backup
         public bool CanCreateFiles { get; set; } = true;
         public bool CanDeleteDirectories { get; set; }
         public bool CanCreateDirectories { get; set; } = true;
-        public bool KeepHistory { get; set; }
+        public bool ReadHistory { get; set; }
+        public bool WriteHistory { get; set; }
         public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 
         public event EventHandler<BackupActionEventArgs> Action;
@@ -385,7 +386,7 @@ namespace Meziantou.Backup
                 var targetFileItem = targetItem as IFileInfo;
                 if (sourceFileItem != null && targetFileItem != null)
                 {
-                    if (KeepHistory)
+                    if (ReadHistory)
                     {
                         var historyFiles = targetItems.FindHistoryItems(targetFileItem).ToList();
                         if (historyFiles.Any())
@@ -399,7 +400,7 @@ namespace Meziantou.Backup
                     if (diff != FileInfoEqualityMethods.None)
                     {
                         string fileName = null;
-                        if (KeepHistory)
+                        if (WriteHistory)
                         {
                             fileName = HistoryFile.ComputeFileName(targetFileItem.Name, DateTime.UtcNow);
                         }

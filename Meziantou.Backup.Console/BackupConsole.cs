@@ -97,6 +97,8 @@ namespace Meziantou.Backup.Console
                 var targetConfigurationOptions = command.Option("-tc|--targetConfiguration <OPTIONS>", "", CommandOptionType.MultipleValue);
 
                 var keepHistoryOption = command.Option("--keepHistory", "Preserve all versions of a file in the target file system (sufix the file name with the utc date)", CommandOptionType.NoValue);
+                var readHistoryOption = command.Option("--readHistory", "", CommandOptionType.NoValue);
+                var writeHistoryOption = command.Option("--writeHistory", "", CommandOptionType.NoValue);
                 var equalityOption = command.Option("--equality <EqualityMethods>", "Length, LastWriteTime, Content, ContentMd5, ContentSha1, ContentSha256, ContentSha512", CommandOptionType.SingleValue);
                 var createDirectoryOption = command.Option("--createDirectories <TRUE,FALSE>", "Can create directories in the target file system", CommandOptionType.SingleValue);
                 var deleteDirectoriesOption = command.Option("--deleteDirectories <TRUE,FALSE>", "Can delete directories in the target file system", CommandOptionType.SingleValue);
@@ -137,7 +139,8 @@ namespace Meziantou.Backup.Console
                     backup.CanUpdateFiles = GetValue(updateFilesOption, true);
                     backup.CanDeleteFiles = GetValue(deleteFilesOption, false);
                     backup.ContinueOnError = GetValue(continueOnErrorOption, false);
-                    backup.KeepHistory = GetValue(keepHistoryOption, false);
+                    backup.ReadHistory = GetValue(readHistoryOption, GetValue(keepHistoryOption, false));
+                    backup.WriteHistory = GetValue(writeHistoryOption, GetValue(keepHistoryOption, false));
 
                     var summary = new BackupSummary(backup);
                     try
