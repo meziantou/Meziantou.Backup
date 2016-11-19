@@ -265,18 +265,18 @@ namespace Meziantou.Backup
             }
         }
 
-        private async Task CreateItemAsync(IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
+        private async Task CreateItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
         {
             var file = sourceItem as IFileInfo;
             if (file != null)
             {
                 if (CanCreateFiles)
                 {
-                    if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceItem, targetItem)))
+                    if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, path, sourceItem, targetItem)))
                         return;
 
                     var fi = await RetryAsync(() => CopyFileAsync(targetItem, file, null, ct), ct).ConfigureAwait(false);
-                    OnAction(new BackupActionEventArgs(BackupAction.Created, file, fi));
+                    OnAction(new BackupActionEventArgs(BackupAction.Created, path, file, fi));
                 }
             }
             else
@@ -286,46 +286,46 @@ namespace Meziantou.Backup
                 {
                     if (CanCreateDirectories)
                     {
-                        if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, sourceDirectory, targetItem)))
+                        if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, path, sourceDirectory, targetItem)))
                             return;
 
                         var di = await RetryAsync(() => targetItem.CreateDirectoryAsync(sourceDirectory.Name, ct), ct).ConfigureAwait(false);
-                        OnAction(new BackupActionEventArgs(BackupAction.Created, sourceItem, di));
+                        OnAction(new BackupActionEventArgs(BackupAction.Created, path, sourceItem, di));
 
                         if (di != null)
                         {
                             // Continue synchonization of the new directory
-                            await SynchronizeAsync(sourceDirectory, di, ct).ConfigureAwait(false);
+                            await SynchronizeAsync(path.Concat(new[] { di.Name }).ToArray(), sourceDirectory, di, ct).ConfigureAwait(false);
                         }
                     }
                 }
             }
         }
 
-        private async Task UpdateItemAsync(IFileInfo sourceFile, IDirectoryInfo targetDirectory, string targetFileName, FileInfoEqualityMethods diff, CancellationToken ct)
+        private async Task UpdateItemAsync(IReadOnlyList<string> path, IFileInfo sourceFile, IFileInfo targetFile, IDirectoryInfo targetDirectory, string targetFileName, FileInfoEqualityMethods diff, CancellationToken ct)
         {
             if (CanUpdateFiles)
             {
-                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, sourceFile, targetDirectory, diff)))
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, path, sourceFile, targetFile, diff)))
                     return;
 
                 var fi = await RetryAsync(() => CopyFileAsync(targetDirectory, sourceFile, targetFileName, ct), ct).ConfigureAwait(false);
-                OnAction(new BackupActionEventArgs(BackupAction.Updated, sourceFile, fi, diff));
+                OnAction(new BackupActionEventArgs(BackupAction.Updated, path, sourceFile, fi, diff));
             }
         }
 
-        private async Task DeleteItemAsync(IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
+        private async Task DeleteItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
         {
             var file = targetItem as IFileInfo;
             if (file != null)
             {
                 if (CanDeleteFiles)
                 {
-                    if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
+                    if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, path, sourceItem, targetItem)))
                         return;
 
                     await RetryAsync(() => targetItem.DeleteAsync(ct), ct).ConfigureAwait(false);
-                    OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
+                    OnAction(new BackupActionEventArgs(BackupAction.Deleted, path, sourceItem, targetItem));
                 }
             }
             else
@@ -335,24 +335,29 @@ namespace Meziantou.Backup
                 {
                     if (CanDeleteDirectories)
                     {
-                        if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, sourceItem, targetItem)))
+                        if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, path, sourceItem, targetItem)))
                             return;
 
                         await RetryAsync(() => directory.DeleteAsync(ct), ct).ConfigureAwait(false);
-                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, sourceItem, targetItem));
+                        OnAction(new BackupActionEventArgs(BackupAction.Deleted, path, sourceItem, targetItem));
                     }
                 }
             }
         }
 
-        protected virtual async Task SynchronizeAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        protected Task SynchronizeAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        {
+            return SynchronizeAsync(new string[0], source, target, ct);
+        }
+
+        protected virtual async Task SynchronizeAsync(IReadOnlyList<string> path, IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
             ct.ThrowIfCancellationRequested();
 
-            if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, source, target)))
+            if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, path, source, target)))
                 return;
 
             var sourceItemsResult = await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false);
@@ -372,13 +377,13 @@ namespace Meziantou.Backup
             //
             foreach (var sourceItem in sourceItems)
             {
-                if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, sourceItem, target)))
+                if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, path, sourceItem, target)))
                     continue;
 
                 var targetItem = targetItems.Get(sourceItem);
                 if (targetItem == null)
                 {
-                    await CreateItemAsync(sourceItem, target, ct).ConfigureAwait(false);
+                    await CreateItemAsync(path, sourceItem, target, ct).ConfigureAwait(false);
                     continue;
                 }
 
@@ -405,19 +410,19 @@ namespace Meziantou.Backup
                             fileName = HistoryFile.ComputeFileName(targetFileItem.Name, DateTime.UtcNow);
                         }
 
-                        await UpdateItemAsync(sourceFileItem, target, fileName, diff, ct).ConfigureAwait(false);
+                        await UpdateItemAsync(path, sourceFileItem, targetFileItem, target, fileName, diff, ct).ConfigureAwait(false);
                         continue;
                     }
                 }
 
-                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, sourceItem, target));
+                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, path, sourceItem, target));
             }
 
             foreach (var targetItem in targetItems)
             {
                 if (sourceItems.Get(targetItem) == null)
                 {
-                    await DeleteItemAsync(source, targetItem, ct).ConfigureAwait(false);
+                    await DeleteItemAsync(path, source, targetItem, ct).ConfigureAwait(false);
                 }
             }
 
@@ -431,7 +436,7 @@ namespace Meziantou.Backup
                 var targetDirectory = targetItems.Get(directory) as IDirectoryInfo;
                 if (targetDirectory != null)
                 {
-                    await SynchronizeAsync(directory, targetDirectory, ct).ConfigureAwait(false);
+                    await SynchronizeAsync(path.Concat(new[] { targetDirectory.Name }).ToArray(), directory, targetDirectory, ct).ConfigureAwait(false);
                 }
             }
         }

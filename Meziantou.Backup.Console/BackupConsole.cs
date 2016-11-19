@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,6 +108,7 @@ namespace Meziantou.Backup.Console
                 var deleteFilesOption = command.Option("--deleteFiles <TRUE,FALSE>", "Can delete files in the target file system", CommandOptionType.SingleValue);
                 var retryCountOption = command.Option("--retry <RetryCount>", "Number of attempts of an operation", CommandOptionType.SingleValue);
                 var continueOnErrorOption = command.Option("--ignoreErrors", "continue on error", CommandOptionType.NoValue);
+                var diffFilesPathOption = command.Option("--diffFilesPath", "", CommandOptionType.SingleValue);
 
                 var sourceAesMethodOption = command.Option("--sourceAesMethod <METHOD>", "AES128, AES256", CommandOptionType.SingleValue);
                 var sourceAesPasswordOption = command.Option("--sourceAesPassword <PASSWORD>", "Password to decrypt files", CommandOptionType.SingleValue);
@@ -141,6 +143,29 @@ namespace Meziantou.Backup.Console
                     backup.ContinueOnError = GetValue(continueOnErrorOption, false);
                     backup.ReadHistory = GetValue(readHistoryOption, GetValue(keepHistoryOption, false));
                     backup.WriteHistory = GetValue(writeHistoryOption, GetValue(keepHistoryOption, false));
+
+                    string writeDiffFilesPath = GetValue(diffFilesPathOption, null);
+                    if (writeDiffFilesPath != null)
+                    {
+                        backup.Action += (sender, e) =>
+                        {
+                            if (e.Action == BackupAction.Creating || e.Action == BackupAction.Deleting)
+                            {
+                                var fi = e.SourceItem as IFileInfo;
+                                if (fi != null)
+                                {
+                                    e.Cancel = true;
+                                    var fullPath = Path.Combine(writeDiffFilesPath, string.Join(Path.DirectorySeparatorChar.ToString(), e.Path));
+                                    Directory.CreateDirectory(fullPath);
+                                    using (var stream = fi.OpenReadAsync(CancellationToken.None).Result)
+                                    using (var streamWriter = File.Create(Path.Combine(fullPath, e.SourceItem.Name)))
+                                    {
+                                        stream.CopyTo(streamWriter);
+                                    }
+                                }
+                            }
+                        };
+                    }
 
                     var summary = new BackupSummary(backup);
                     try
@@ -428,7 +453,7 @@ namespace Meziantou.Backup.Console
 
             if (e.Method != FileInfoEqualityMethods.None)
             {
-                if (e.SourceItem.IsFile() && e.Method == FileInfoEqualityMethods.Length)
+                if (e.SourceItem.IsFile() && e.TargetItem.IsFile() && e.Method == FileInfoEqualityMethods.Length)
                 {
                     System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}: {((IFileInfo)e.SourceItem).Length}-{((IFileInfo)e.TargetItem).Length}): \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
                 }
