@@ -45,7 +45,7 @@ namespace Meziantou.Backup.Console
             if ((Level & ConsoleLoggerLevel.FileCopyProgress) != 0)
             {
                 float percent = ((float)e.CurrentPosition) / e.FileLength * 100f;
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Copying ({percent:F1}% - {FriendlyFileLength(e.CurrentPosition)}/{FriendlyFileLength(e.FileLength)}): {GetDisplayName(e, e.SourceItem)}");
+                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId:#00}] Copying ({percent:F1}% - {FriendlyFileLength(e.CurrentPosition)}/{FriendlyFileLength(e.FileLength)}): {GetDisplayName(e, e.SourceItem)}");
             }
         }
 
@@ -56,11 +56,11 @@ namespace Meziantou.Backup.Console
 
             if (e.Method != FileInfoEqualityMethods.None)
             {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}): {GetDisplayName(e, e.SourceItem)}");
+                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId:#00}] {e.Action} ({e.Method}): {GetDisplayName(e, e.SourceItem)}");
             }
             else
             {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action}: {GetDisplayName(e, e.SourceItem)}");
+                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId:#00}] {e.Action}: {GetDisplayName(e, e.SourceItem)}");
             }
         }
 
