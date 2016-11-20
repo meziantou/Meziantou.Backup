@@ -85,10 +85,7 @@ namespace Meziantou.Backup.Console
                 e.Action == BackupAction.Updated ||
                 e.Action == BackupAction.Deleted)
                 return false;
-
-            if (e.Action == BackupAction.Synchronizing && Level.HasFlag(ConsoleLoggerLevel.DirectorySynchronizing) && e.SourceItem.IsFile())
-                return true;
-
+            
             if (e.Action == BackupAction.Creating && Level.HasFlag(ConsoleLoggerLevel.FileCreating) && e.SourceItem.IsFile())
                 return true;
 
@@ -96,6 +93,9 @@ namespace Meziantou.Backup.Console
                 return true;
 
             if (e.Action == BackupAction.Deleting && Level.HasFlag(ConsoleLoggerLevel.FileDeleting) && e.SourceItem.IsFile())
+                return true;
+
+            if (e.Action == BackupAction.Synchronizing && Level.HasFlag(ConsoleLoggerLevel.DirectorySynchronizing) && e.SourceItem.IsDirectory())
                 return true;
 
             if (e.Action == BackupAction.Creating && Level.HasFlag(ConsoleLoggerLevel.DirectoryCreating) && e.SourceItem.IsDirectory())
@@ -143,7 +143,7 @@ namespace Meziantou.Backup.Console
             }
         }
 
-        private string GetFullName(IEnumerable<string> path, IFileSystemInfo item, bool relative)
+        private string GetFullName(IReadOnlyCollection<string> path, IFileSystemInfo item, bool relative)
         {
             if (!relative)
             {
@@ -151,6 +151,9 @@ namespace Meziantou.Backup.Console
                 if (fullName != null)
                     return fullName.FullName;
             }
+
+            if (path == null)
+                return "/";
 
             StringBuilder sb = new StringBuilder();
             sb.Append("/");

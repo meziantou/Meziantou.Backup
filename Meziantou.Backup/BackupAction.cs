@@ -10,6 +10,8 @@ namespace Meziantou.Backup
         Deleting,
         Deleted,
         Synchronizing,
-        Synchronized
+        Synchronized,
+        SynchronizingDirectoryContent,
+        SynchronizedDirectoryContent
     }
 }

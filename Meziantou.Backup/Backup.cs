@@ -357,7 +357,17 @@ namespace Meziantou.Backup
 
             ct.ThrowIfCancellationRequested();
 
-            if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, path, source, target)))
+            IReadOnlyList<string> initPath;
+            if (path.Any())
+            {
+                initPath = path.Take(path.Count - 1).ToArray();
+            }
+            else
+            {
+                initPath = null;
+            }
+
+            if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, initPath, source, target)))
                 return;
 
             var sourceItemsResult = await RetryAsync(() => source.GetItemsAsync(ct), ct).ConfigureAwait(false);
@@ -377,7 +387,7 @@ namespace Meziantou.Backup
             //
             foreach (var sourceItem in sourceItems)
             {
-                if (!OnAction(new BackupActionEventArgs(BackupAction.Synchronizing, path, sourceItem, target)))
+                if (!OnAction(new BackupActionEventArgs(BackupAction.SynchronizingDirectoryContent, path, sourceItem, target)))
                     continue;
 
                 var targetItem = targetItems.Get(sourceItem);
@@ -415,7 +425,7 @@ namespace Meziantou.Backup
                     }
                 }
 
-                OnAction(new BackupActionEventArgs(BackupAction.Synchronized, path, sourceItem, target));
+                OnAction(new BackupActionEventArgs(BackupAction.SynchronizedDirectoryContent, path, sourceItem, target));
             }
 
             foreach (var targetItem in targetItems)
