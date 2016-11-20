@@ -25,6 +25,11 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
+            if (!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+
             var item = await Client.CreateDirectoryAsync(path, ct).ConfigureAwait(false);
             return new OneDriveFileInfo(this, item);
         }
