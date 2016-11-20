@@ -49,6 +49,8 @@
     <Compile Include="BackupConsole.cs" />
     <Compile Include="BackupSummary.cs" />
     <Compile Include="CommandLineApplicationExtensions.cs" />
+    <Compile Include="ConsoleLogger.cs" />
+    <Compile Include="ConsoleLoggerLevel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

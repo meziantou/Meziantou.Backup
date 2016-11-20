@@ -244,7 +244,7 @@ namespace Meziantou.Backup
             }
         }
 
-        private async Task<IFileInfo> CopyFileAsync(IDirectoryInfo directory, IFileInfo file, string targetFileName, CancellationToken ct)
+        private async Task<IFileInfo> CopyFileAsync(IReadOnlyList<string> path, IDirectoryInfo directory, IFileInfo file, string targetFileName, CancellationToken ct)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (file == null) throw new ArgumentNullException(nameof(file));
@@ -257,7 +257,7 @@ namespace Meziantou.Backup
                     progressStream.StreamRead += (sender, args) =>
                     {
                         currentPosition += args.Count;
-                        OnCopying(new FileCopyingEventArgs(file, directory, currentPosition, file.Length));
+                        OnCopying(new FileCopyingEventArgs(path, file, directory, currentPosition, file.Length));
                     };
 
                     return await directory.CreateFileAsync(targetFileName ?? file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
@@ -275,7 +275,7 @@ namespace Meziantou.Backup
                     if (!OnAction(new BackupActionEventArgs(BackupAction.Creating, path, sourceItem, targetItem)))
                         return;
 
-                    var fi = await RetryAsync(() => CopyFileAsync(targetItem, file, null, ct), ct).ConfigureAwait(false);
+                    var fi = await RetryAsync(() => CopyFileAsync(path, targetItem, file, null, ct), ct).ConfigureAwait(false);
                     OnAction(new BackupActionEventArgs(BackupAction.Created, path, file, fi));
                 }
             }
@@ -309,7 +309,7 @@ namespace Meziantou.Backup
                 if (!OnAction(new BackupActionEventArgs(BackupAction.Updating, path, sourceFile, targetFile, diff)))
                     return;
 
-                var fi = await RetryAsync(() => CopyFileAsync(targetDirectory, sourceFile, targetFileName, ct), ct).ConfigureAwait(false);
+                var fi = await RetryAsync(() => CopyFileAsync(path, targetDirectory, sourceFile, targetFileName, ct), ct).ConfigureAwait(false);
                 OnAction(new BackupActionEventArgs(BackupAction.Updated, path, sourceFile, fi, diff));
             }
         }

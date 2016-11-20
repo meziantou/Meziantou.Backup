@@ -124,14 +124,14 @@ namespace Meziantou.Backup.Console
                 var targetAesEncryptFileNamesOption = command.Option("--targetAesEncryptFileNames", "Encrypt file names", CommandOptionType.NoValue);
                 var targetAesEncryptDirectoryNamesOption = command.Option("--targetAesEncryptDirectoryNames", "Encrypt directory names", CommandOptionType.NoValue);
 
+                var logLevelOption = command.Option("--log", "", CommandOptionType.SingleValue);
                 var testConfig = command.Option("--test-config", "for testing purpose only", CommandOptionType.NoValue);
 
                 command.OnExecute(() =>
                 {
                     var backup = new Backup();
-                    backup.Action += Backup_Action;
-                    backup.Error += Backup_Error;
-                    backup.Copying += Backup_Copying;
+                    var backupConsole = new ConsoleLogger(backup);
+                    backupConsole.Level = GetValue(logLevelOption, ConsoleLoggerLevel.Default);
 
                     backup.EqualityMethods = GetValue(equalityOption, FileInfoEqualityMethods.Default);
                     backup.RetryCount = GetValue(retryCountOption, 3);
@@ -404,77 +404,6 @@ namespace Meziantou.Backup.Console
             }
 
             return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct).ConfigureAwait(false);
-        }
-
-        private void Backup_Copying(object sender, FileCopyingEventArgs e)
-        {
-            float percent = ((float)e.CurrentPosition) / e.FileLength * 100f;
-            System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Copying ({percent:F1}% - {FriendlyFileLength(e.CurrentPosition)}/{FriendlyFileLength(e.FileLength)}): <{GetDisplayName(e.SourceItem)}> -> <{GetDisplayName(e.TargetItem)}>");
-        }
-
-        private string FriendlyFileLength(long length)
-        {
-            string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
-            int s = 0;
-
-            while (length >= 1024)
-            {
-                s++;
-                length /= 1024;
-            }
-
-            return $"{length} {suffixes[s]}";
-        }
-
-        private void Backup_Error(object sender, BackupErrorEventArgs e)
-        {
-            if (e.Exception is OperationCanceledException)
-            {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Error: Operation canceled");
-                e.Cancel = true;
-            }
-            else
-            {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Retry ({e.RetryCount}): {e.Exception}");
-            }
-        }
-
-        private void Backup_Action(object sender, BackupActionEventArgs e)
-        {
-            // Filter some actions...
-            if (e.Action == BackupAction.Synchronized ||
-                e.Action == BackupAction.Created ||
-                e.Action == BackupAction.Updated ||
-                e.Action == BackupAction.Deleted)
-                return;
-
-            if (e.Action == BackupAction.Synchronizing && e.SourceItem.IsFile())
-                return;
-
-            if (e.Method != FileInfoEqualityMethods.None)
-            {
-                if (e.SourceItem.IsFile() && e.TargetItem.IsFile() && e.Method == FileInfoEqualityMethods.Length)
-                {
-                    System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}: {((IFileInfo)e.SourceItem).Length}-{((IFileInfo)e.TargetItem).Length}): \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
-                }
-                else
-                {
-                    System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action} ({e.Method}): \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
-                }
-            }
-            else
-            {
-                System.Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] {e.Action}: \"{GetDisplayName(e.SourceItem)}\" -> \"{GetDisplayName(e.TargetItem)}\"");
-            }
-        }
-
-        private string GetDisplayName(IFileSystemInfo item)
-        {
-            var fullName = item as IFullName;
-            if (fullName != null)
-                return fullName.FullName;
-
-            return item?.Name;
         }
 
         public string GetPassword()
