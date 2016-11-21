@@ -6,7 +6,7 @@
     <ProjectGuid>{A3712A8C-BAD5-4FF1-8D35-2386F0A68AE8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Meziantou.Backup.AesTests</RootNamespace>
+    <RootNamespace>Meziantou.Backup.FileSystem.AesTests</RootNamespace>
     <AssemblyName>Meziantou.Backup.AesTests</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

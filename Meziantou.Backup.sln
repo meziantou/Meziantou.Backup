@@ -28,7 +28,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup", "Meziant
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.Physical", "Meziantou.Backup.FileSystem.Physical\Meziantou.Backup.FileSystem.Physical.csproj", "{968E75D1-B755-4E1E-809A-B619C2235F97}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.AesTests", "Meziantou.Backup.AesTests\Meziantou.Backup.AesTests.csproj", "{A3712A8C-BAD5-4FF1-8D35-2386F0A68AE8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.AesTests", "Meziantou.Backup.FileSystem.AesTests\Meziantou.Backup.FileSystem.AesTests.csproj", "{A3712A8C-BAD5-4FF1-8D35-2386F0A68AE8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

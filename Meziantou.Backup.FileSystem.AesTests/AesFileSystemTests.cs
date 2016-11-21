@@ -5,7 +5,7 @@ using Meziantou.Backup.FileSystem.Aes;
 using Meziantou.Backup.FileSystem.InMemory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Backup.AesTests
+namespace Meziantou.Backup.FileSystem.AesTests
 {
     [TestClass]
     public class AesFileSystemTests
