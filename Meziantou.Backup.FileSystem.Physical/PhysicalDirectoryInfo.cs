@@ -26,15 +26,13 @@ namespace Meziantou.Backup.FileSystem.Physical
             var children = _di.GetFileSystemInfos();
             foreach (var fileSystemInfo in children)
             {
-                var di = fileSystemInfo as DirectoryInfo;
-                if (di != null)
+                if (fileSystemInfo is DirectoryInfo di)
                 {
                     result.Add(new PhysicalDirectoryInfo(di));
                 }
                 else
                 {
-                    var fi = fileSystemInfo as FileInfo;
-                    if (fi != null)
+                    if (fileSystemInfo is FileInfo fi)
                     {
                         if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
                         {

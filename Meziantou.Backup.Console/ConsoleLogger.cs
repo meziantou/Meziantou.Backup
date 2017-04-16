@@ -147,8 +147,7 @@ namespace Meziantou.Backup.Console
         {
             if (!relative)
             {
-                var fullName = item as IFullName;
-                if (fullName != null)
+                if (item is IFullName fullName)
                     return fullName.FullName;
             }
 

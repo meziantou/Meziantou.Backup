@@ -1,13 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.Console", "Meziantou.Backup.Console\Meziantou.Backup.Console.csproj", "{DBA84775-E8B2-4429-B9A7-0291E49CBA75}"
+	ProjectSection(ProjectDependencies) = postProject
+		{72626F1E-77E6-4C65-9444-2C5C38CE102C} = {72626F1E-77E6-4C65-9444-2C5C38CE102C}
+		{5792B032-93F0-4D3A-8ED7-AE57B3CA1CFA} = {5792B032-93F0-4D3A-8ED7-AE57B3CA1CFA}
+		{DCCA6461-63BA-479A-9792-4CE90334D561} = {DCCA6461-63BA-479A-9792-4CE90334D561}
+		{79D203BC-2A1C-4A21-A625-E9DC59FB5194} = {79D203BC-2A1C-4A21-A625-E9DC59FB5194}
+		{968E75D1-B755-4E1E-809A-B619C2235F97} = {968E75D1-B755-4E1E-809A-B619C2235F97}
+		{9F6440DC-265E-465D-A161-ED053BF909F6} = {9F6440DC-265E-465D-A161-ED053BF909F6}
+		{4015D7EE-649C-4A4A-AE4E-CA30E1D604BA} = {4015D7EE-649C-4A4A-AE4E-CA30E1D604BA}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.OneDrive", "Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj", "{79D203BC-2A1C-4A21-A625-E9DC59FB5194}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DCCA6461-63BA-479A-9792-4CE90334D561} = {DCCA6461-63BA-479A-9792-4CE90334D561}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.BackupTests", "Meziantou.BackupTests\Meziantou.BackupTests.csproj", "{3683F4E9-3A7A-4ABB-A5F3-1D6264F14CF6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4015D7EE-649C-4A4A-AE4E-CA30E1D604BA} = {4015D7EE-649C-4A4A-AE4E-CA30E1D604BA}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E110B4F0-4CB6-48AD-8444-37CDC22DE201}"
 	ProjectSection(SolutionItems) = preProject
@@ -17,6 +32,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.AbstractionsTests", "Meziantou.Backup.FileSystem.AbstractionsTests\Meziantou.Backup.FileSystem.AbstractionsTests.csproj", "{BB4C86B1-CFDE-4BBD-9AA4-132D80F3775F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.Sftp", "Meziantou.Backup.FileSystem.Sftp\Meziantou.Backup.FileSystem.Sftp.csproj", "{72626F1E-77E6-4C65-9444-2C5C38CE102C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DCCA6461-63BA-479A-9792-4CE90334D561} = {DCCA6461-63BA-479A-9792-4CE90334D561}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Backup.FileSystem.Abstractions", "Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj", "{DCCA6461-63BA-479A-9792-4CE90334D561}"
 EndProject

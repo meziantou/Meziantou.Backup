@@ -58,8 +58,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             string date = fileName.Substring(index + 1);
             fileName = fileName.Substring(0, index);
 
-            DateTime dateTime;
-            if (DateTime.TryParseExact(date, DateTimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime))
+            if (DateTime.TryParseExact(date, DateTimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
                 return new HistoryFile(file) { DateTime = dateTime, FileName = fileName };
 
             return null;

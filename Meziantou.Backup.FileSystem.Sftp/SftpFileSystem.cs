@@ -22,6 +22,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
         public int Port { get; set; } = 22;
         public string Username { get; set; }
         public string Password { get; set; }
+        public string PrivateKeyFile { get; set; }
 
         internal SftpClient Client
         {
@@ -38,7 +39,6 @@ namespace Meziantou.Backup.FileSystem.Sftp
                 return;
 
             _client = CreateClient();
-            _client.Connect();
         }
 
         public virtual Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
@@ -49,7 +49,38 @@ namespace Meziantou.Backup.FileSystem.Sftp
 
         protected virtual SftpClient CreateClient()
         {
-            return new SftpClient(Host, Port, Username, Password);
+            SftpClient client = null;
+            if (!string.IsNullOrEmpty(PrivateKeyFile))
+            {
+                using (var pkf = new PrivateKeyFile(PrivateKeyFile, Password))
+                {
+                    try
+                    {
+                        client = new SftpClient(Host, Port, Username, pkf);
+                        client.Connect();
+                    }
+                    catch
+                    {
+                        client?.Dispose();
+                        throw;
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    client = new SftpClient(Host, Port, Username, Password);
+                    client.Connect();
+                }
+                catch
+                {
+                    client?.Dispose();
+                    throw;
+                }
+            }
+
+            return client;
         }
 
         internal virtual Task<IReadOnlyCollection<SftpFileInfo>> ListDirectoryAsync(string path)
@@ -192,11 +223,9 @@ namespace Meziantou.Backup.FileSystem.Sftp
                 }
                 else
                 {
-                    var str = value as string;
-                    if (str != null)
+                    if (value is string str)
                     {
-                        int port;
-                        if (int.TryParse(str, out port))
+                        if (int.TryParse(str, out int port))
                         {
                             Port = port;
                         }
@@ -212,6 +241,11 @@ namespace Meziantou.Backup.FileSystem.Sftp
             if (data.ContainsKey(nameof(Password)))
             {
                 Password = data[nameof(Password)] as string;
+            }
+
+            if (data.ContainsKey(nameof(PrivateKeyFile)))
+            {
+                PrivateKeyFile = data[nameof(PrivateKeyFile)] as string;
             }
         }
 

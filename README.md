@@ -46,6 +46,7 @@ Configuration:
 - `Host`: SFTP host (ex: sample.com)
 - `Port` (optional, default `22`)
 - `Username`
+- `PrivateKeyFile`
 - `Password`
 
 # AES Encryption

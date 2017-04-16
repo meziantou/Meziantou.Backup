@@ -26,8 +26,7 @@ namespace Meziantou.Backup.Console
             if (!option.HasValue())
                 return defaultValue;
 
-            int v;
-            if (int.TryParse(option.Value(), out v))
+            if (int.TryParse(option.Value(), out int v))
                 return v;
 
             return defaultValue;
@@ -41,8 +40,7 @@ namespace Meziantou.Backup.Console
             if (option.OptionType == CommandOptionType.NoValue)
                 return true;
 
-            bool v;
-            if (bool.TryParse(option.Value(), out v))
+            if (bool.TryParse(option.Value(), out bool v))
                 return v;
 
             return defaultValue;
@@ -55,8 +53,7 @@ namespace Meziantou.Backup.Console
 
             if (typeof(T).IsEnum)
             {
-                T v;
-                if (Enum.TryParse(option.Value(), true, out v))
+                if (Enum.TryParse(option.Value(), true, out T v))
                     return v;
             }
 
@@ -70,8 +67,7 @@ namespace Meziantou.Backup.Console
 
             if (typeof(T).IsEnum)
             {
-                T v;
-                if (Enum.TryParse(option.Value(), true, out v))
+                if (Enum.TryParse(option.Value(), true, out T v))
                     return v;
             }
 
@@ -80,7 +76,6 @@ namespace Meziantou.Backup.Console
 
         public void Main(string[] args)
         {
-
             var app = new CommandLineApplication();
             app.HelpOption();
 
@@ -151,8 +146,7 @@ namespace Meziantou.Backup.Console
                         {
                             if (e.Action == BackupAction.Creating || e.Action == BackupAction.Deleting)
                             {
-                                var fi = e.SourceItem as IFileInfo;
-                                if (fi != null)
+                                if (e.SourceItem is IFileInfo fi)
                                 {
                                     e.Cancel = true;
                                     var fullPath = Path.Combine(writeDiffFilesPath, string.Join(Path.DirectorySeparatorChar.ToString(), e.Path));
@@ -170,13 +164,11 @@ namespace Meziantou.Backup.Console
                     var summary = new BackupSummary(backup);
                     try
                     {
-                        string sourcePath;
-                        string targetPath;
-                        var sourceFileSystem = GetFileSystem(new object[] { sourceArgument, sourceOptions }, sourceConfigurationOptions, out sourcePath);
+                        var sourceFileSystem = GetFileSystem(new object[] { sourceArgument, sourceOptions }, sourceConfigurationOptions, out string sourcePath);
                         if (sourceFileSystem == null)
                             return 1;
 
-                        var targetFileSystem = GetFileSystem(new object[] { targetArgument, targetOptions }, targetConfigurationOptions, out targetPath);
+                        var targetFileSystem = GetFileSystem(new object[] { targetArgument, targetOptions }, targetConfigurationOptions, out string targetPath);
                         if (targetFileSystem == null)
                             return 2;
 
@@ -256,7 +248,7 @@ namespace Meziantou.Backup.Console
                 // Save password
                 if (!string.IsNullOrEmpty(applicationName) && !string.IsNullOrEmpty(pwd))
                 {
-                    CredentialManager.WriteCredential(applicationName, "", pwd);
+                    CredentialManager.WriteCredential(applicationName, "", pwd, CredentialPersistence.LocalMachine);
                 }
             }
 
@@ -321,8 +313,7 @@ namespace Meziantou.Backup.Console
         {
             foreach (var item in pathOptions)
             {
-                var option = item as CommandOption;
-                if (option != null)
+                if (item is CommandOption option)
                 {
                     if (option.HasValue())
                     {
@@ -356,8 +347,8 @@ namespace Meziantou.Backup.Console
 
             try
             {
-                var sourceDirectory = await GetOrCreateRootDirectoryItemAsync(sourceFileSystem, sourcePath, ct);
-                var targetDirectory = await GetOrCreateRootDirectoryItemAsync(targetFileSystem, targetPath, ct);
+                var sourceDirectory = await GetOrCreateRootDirectoryItemAsync(sourceFileSystem, sourcePath, ct).ConfigureAwait(false);
+                var targetDirectory = await GetOrCreateRootDirectoryItemAsync(targetFileSystem, targetPath, ct).ConfigureAwait(false);
 
                 await backup.RunAsync(sourceDirectory, targetDirectory, ct).ConfigureAwait(false);
             }
@@ -397,8 +388,7 @@ namespace Meziantou.Backup.Console
 
         private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
         {
-            var authenticable = fileSystem as IAuthenticable;
-            if (authenticable != null)
+            if (fileSystem is IAuthenticable authenticable)
             {
                 await authenticable.LogInAsync(ct).ConfigureAwait(false);
             }

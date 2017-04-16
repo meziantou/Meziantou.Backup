@@ -6,7 +6,7 @@ namespace Meziantou.Backup.Console
     internal static class Program
     {
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             if (Debugger.IsAttached)
             {

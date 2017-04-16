@@ -179,8 +179,7 @@ namespace Meziantou.Backup
 
         protected virtual async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(IFileInfo fileInfo, CancellationToken ct)
         {
-            var hashProvider = fileInfo as IHashProvider;
-            if (hashProvider != null)
+            if (fileInfo is IHashProvider hashProvider)
             {
                 var algorithms = new List<Tuple<FileInfoEqualityMethods, byte[]>>();
                 if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5))
@@ -267,8 +266,7 @@ namespace Meziantou.Backup
 
         private async Task CreateItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
         {
-            var file = sourceItem as IFileInfo;
-            if (file != null)
+            if (sourceItem is IFileInfo file)
             {
                 if (CanCreateFiles)
                 {
@@ -281,8 +279,7 @@ namespace Meziantou.Backup
             }
             else
             {
-                var sourceDirectory = sourceItem as IDirectoryInfo;
-                if (sourceDirectory != null)
+                if (sourceItem is IDirectoryInfo sourceDirectory)
                 {
                     if (CanCreateDirectories)
                     {
@@ -316,8 +313,7 @@ namespace Meziantou.Backup
 
         private async Task DeleteItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
         {
-            var file = targetItem as IFileInfo;
-            if (file != null)
+            if (targetItem is IFileInfo file)
             {
                 if (CanDeleteFiles)
                 {
@@ -330,8 +326,7 @@ namespace Meziantou.Backup
             }
             else
             {
-                var directory = targetItem as IDirectoryInfo;
-                if (directory != null)
+                if (targetItem is IDirectoryInfo directory)
                 {
                     if (CanDeleteDirectories)
                     {
@@ -443,8 +438,7 @@ namespace Meziantou.Backup
             //
             foreach (var directory in sourceItems.OfType<IDirectoryInfo>())
             {
-                var targetDirectory = targetItems.Get(directory) as IDirectoryInfo;
-                if (targetDirectory != null)
+                if (targetItems.Get(directory) is IDirectoryInfo targetDirectory)
                 {
                     await SynchronizeAsync(path.Concat(new[] { targetDirectory.Name }).ToArray(), directory, targetDirectory, ct).ConfigureAwait(false);
                 }

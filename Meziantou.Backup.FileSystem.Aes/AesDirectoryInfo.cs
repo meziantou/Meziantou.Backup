@@ -24,14 +24,12 @@ namespace Meziantou.Backup.FileSystem.Aes
             if (fsi == null)
                 return null;
 
-            var fileInfo = fsi as IFileInfo;
-            if (fileInfo != null && fileInfo.IsFile())
+            if (fsi is IFileInfo fileInfo && fileInfo.IsFile())
             {
                 return new AesFileInfo(FileSystem, fileInfo);
             }
 
-            var directoryInfo = fsi as IDirectoryInfo;
-            if (directoryInfo != null && directoryInfo.IsDirectory())
+            if (fsi is IDirectoryInfo directoryInfo && directoryInfo.IsDirectory())
             {
                 return new AesDirectoryInfo(FileSystem, directoryInfo);
             }
@@ -41,7 +39,7 @@ namespace Meziantou.Backup.FileSystem.Aes
 
         public async Task<IReadOnlyCollection<IFileSystemInfo>> GetItemsAsync(CancellationToken ct)
         {
-            var items = await _directoryInfo.GetItemsAsync(ct);
+            var items = await _directoryInfo.GetItemsAsync(ct).ConfigureAwait(false);
             return items.Select(Convert).ToList();
         }
 
@@ -65,7 +63,7 @@ namespace Meziantou.Backup.FileSystem.Aes
                     using (var cryptoStream = new CryptoStream(stream, encryptor, CryptoStreamMode.Read))
                     using (var concat = new StreamEnumerator(new Stream[] { headerStream, cryptoStream }, true))
                     {
-                        var fileInfo = await _directoryInfo.CreateFileAsync(name, concat, length, ct);
+                        var fileInfo = await _directoryInfo.CreateFileAsync(name, concat, length, ct).ConfigureAwait(false);
                         return new AesFileInfo(FileSystem, fileInfo);
                     }
                 }
@@ -79,7 +77,7 @@ namespace Meziantou.Backup.FileSystem.Aes
                 name = EncryptName(name);
             }
 
-            var di = await _directoryInfo.CreateDirectoryAsync(name, ct);
+            var di = await _directoryInfo.CreateDirectoryAsync(name, ct).ConfigureAwait(false);
             return new AesDirectoryInfo(FileSystem, di);
         }
     }

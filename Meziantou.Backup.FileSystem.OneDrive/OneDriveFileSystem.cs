@@ -39,11 +39,9 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             if (data == null)
                 return;
 
-            object o;
-            if (data.TryGetValue("ApplicationName", out o))
+            if (data.TryGetValue("ApplicationName", out object o))
             {
-                var appName = o as string;
-                if (appName != null)
+                if (o is string appName)
                 {
                     Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName);
                 }
@@ -51,11 +49,9 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
             if (data.TryGetValue("AuthenticateOnUnauthenticatedError", out o))
             {
-                var value = o as string;
-                if (value != null)
+                if (o is string value)
                 {
-                    bool b;
-                    if (bool.TryParse(value, out b))
+                    if (bool.TryParse(value, out bool b))
                     {
                         Client.AuthenticateOnUnauthenticatedError = b;
                     }
@@ -64,11 +60,9 @@ namespace Meziantou.Backup.FileSystem.OneDrive
 
             if (data.TryGetValue("UploadChunkSize", out o))
             {
-                var value = o as string;
-                if (value != null)
+                if (o is string value)
                 {
-                    int size;
-                    if (int.TryParse(value, out size))
+                    if (int.TryParse(value, out int size))
                     {
                         UploadChunkSize = size;
                     }
