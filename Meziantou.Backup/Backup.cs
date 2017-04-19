@@ -266,7 +266,7 @@ namespace Meziantou.Backup
 
         private async Task CreateItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)
         {
-            if (sourceItem is IFileInfo file)
+            if (sourceItem.IsFile() && sourceItem is IFileInfo file)
             {
                 if (CanCreateFiles)
                 {
@@ -279,7 +279,7 @@ namespace Meziantou.Backup
             }
             else
             {
-                if (sourceItem is IDirectoryInfo sourceDirectory)
+                if (sourceItem.IsDirectory && sourceItem is IDirectoryInfo sourceDirectory)
                 {
                     if (CanCreateDirectories)
                     {
@@ -313,7 +313,7 @@ namespace Meziantou.Backup
 
         private async Task DeleteItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IFileSystemInfo targetItem, CancellationToken ct)
         {
-            if (targetItem is IFileInfo file)
+            if (targetItem.IsFile() && targetItem is IFileInfo file)
             {
                 if (CanDeleteFiles)
                 {
@@ -326,7 +326,7 @@ namespace Meziantou.Backup
             }
             else
             {
-                if (targetItem is IDirectoryInfo directory)
+                if (targetItem.IsDirectory && targetItem is IDirectoryInfo directory)
                 {
                     if (CanDeleteDirectories)
                     {
@@ -438,7 +438,7 @@ namespace Meziantou.Backup
             //
             foreach (var directory in sourceItems.OfType<IDirectoryInfo>())
             {
-                if (targetItems.Get(directory) is IDirectoryInfo targetDirectory)
+                if (targetItems.Get(directory) is IDirectoryInfo targetDirectory && targetDirectory.IsDirectory)
                 {
                     await SynchronizeAsync(path.Concat(new[] { targetDirectory.Name }).ToArray(), directory, targetDirectory, ct).ConfigureAwait(false);
                 }
