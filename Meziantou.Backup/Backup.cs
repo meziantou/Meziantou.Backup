@@ -412,7 +412,7 @@ namespace Meziantou.Backup
                         string fileName = null;
                         if (WriteHistory)
                         {
-                            fileName = HistoryFile.ComputeFileName(targetFileItem.Name, DateTime.UtcNow);
+                            fileName = HistoryFile.ComputeFileName(sourceFileItem.Name, DateTime.UtcNow);
                         }
 
                         await UpdateItemAsync(path, sourceFileItem, targetFileItem, target, fileName, diff, ct).ConfigureAwait(false);

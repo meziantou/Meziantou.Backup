@@ -8,7 +8,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
         private static StringComparison _fileNameComparison = StringComparison.OrdinalIgnoreCase;
         private string _fileName;
         public const string FileExtension = ".backuphistory";
-        private const string DateTimeFormat = "yyyyMMddhhmmss";
+        private const string DateTimeFormat = "yyyyMMddHHmmss";
 
         public IFileInfo File { get; }
         public DateTime DateTime { get; set; }
