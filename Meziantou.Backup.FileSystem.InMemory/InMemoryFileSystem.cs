@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
+using System.Linq;
 
 namespace Meziantou.Backup.FileSystem.InMemory
 {
@@ -40,11 +41,16 @@ namespace Meziantou.Backup.FileSystem.InMemory
             }
         }
 
-        public bool HasItem(string path)
+        public bool ContainsItem(string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             return GetItem(path) != null;
+        }
+
+        public bool HasItems()
+        {
+            return _root.Children.Any();
         }
 
         public InMemoryFileSystemInfo GetItem(string path)

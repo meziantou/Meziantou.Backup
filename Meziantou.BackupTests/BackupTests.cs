@@ -26,7 +26,7 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsTrue(targetProvider.HasItem("item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("item.png"));
         }
 
         [TestMethod]
@@ -45,7 +45,7 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsFalse(targetProvider.HasItem("item.png"));
+            Assert.IsFalse(targetProvider.ContainsItem("item.png"));
         }
 
         [TestMethod]
@@ -72,13 +72,13 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item2.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item3.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item4.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/sub1/item1"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/sub1/item1.txt"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/sub2/"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item2.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item3.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item4.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1.txt"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub2/"));
         }
 
         [TestMethod]
@@ -194,8 +194,8 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item2.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item2.png"));
             var children = targetProvider.GetDirectory("/Sample/").Children;
             Assert.IsNotNull(children.First(f => f.IsFile() && f.Name.StartsWith("item.png.")));
         }
@@ -221,9 +221,9 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item.png.20160101000000.backuphistory"));
-            Assert.IsTrue(targetProvider.HasItem("Sample/item2.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png.20160101000000.backuphistory"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item2.png"));
             var children = targetProvider.GetDirectory("/Sample/").Children;
             Assert.AreEqual(3, children.Count);
         }
@@ -250,10 +250,48 @@ namespace Meziantou.BackupTests
             backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
 
             // Assert
-            Assert.IsTrue(targetProvider.HasItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png"));
             var children = targetProvider.GetDirectory("/Sample/").Children;
             Assert.AreEqual(5, children.Count);
         }
+
+        [TestMethod]
+        public void TestMethod11()
+        {
+            // Arrange
+            var sourceProvider = new InMemoryFileSystem();
+            sourceProvider.AddItem("Sample/item.png");
+            sourceProvider.AddItem("Sample/item2.png");
+            sourceProvider.AddItem("Sample/item3.png");
+            sourceProvider.AddItem("Sample/sub1/item1"); // item
+            sourceProvider.AddItem("Sample/sub1/item1.txt");
+            sourceProvider.AddItem("Sample/sub2/");
+
+            var targetProvider = new InMemoryFileSystem();
+            targetProvider.AddItem("Sample/item.png");
+            targetProvider.AddItem("Sample/item2.png");
+            targetProvider.AddItem("Sample/item4.png");
+            targetProvider.AddItem("Sample/sub1/item1");
+
+            var backup = new Backup.Backup();
+            backup.DeleteSourceFiles = true;
+            backup.DeleteSourceDirectories = true;
+
+            // Act
+            backup.RunAsync(sourceProvider, targetProvider, CancellationToken.None).Wait();
+
+            // Assert
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item2.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item3.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/item4.png"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1.txt"));
+            Assert.IsTrue(targetProvider.ContainsItem("Sample/sub2/"));
+                        
+            Assert.IsFalse(sourceProvider.HasItems());
+        }
+
 
         private static byte[] HexaToBytes(string str)
         {

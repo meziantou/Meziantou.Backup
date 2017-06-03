@@ -101,6 +101,7 @@ namespace Meziantou.Backup.Console
                 var createFilesOption = command.Option("--createFiles <TRUE,FALSE>", "Can create files in the target file system", CommandOptionType.SingleValue);
                 var updateFilesOption = command.Option("--updateFiles <TRUE,FALSE>", "Can update files in the target file system", CommandOptionType.SingleValue);
                 var deleteFilesOption = command.Option("--deleteFiles <TRUE,FALSE>", "Can delete files in the target file system", CommandOptionType.SingleValue);
+                var deleteSourceFilesOption = command.Option("--deleteSourceFiles <TRUE,FALSE>", "Delete source files after being processed", CommandOptionType.SingleValue);
                 var retryCountOption = command.Option("--retry <RetryCount>", "Number of attempts of an operation", CommandOptionType.SingleValue);
                 var continueOnErrorOption = command.Option("--ignoreErrors", "continue on error", CommandOptionType.NoValue);
                 var diffFilesPathOption = command.Option("--diffFilesPath", "", CommandOptionType.SingleValue);
@@ -138,6 +139,8 @@ namespace Meziantou.Backup.Console
                     backup.ContinueOnError = GetValue(continueOnErrorOption, false);
                     backup.ReadHistory = GetValue(readHistoryOption, GetValue(keepHistoryOption, false));
                     backup.WriteHistory = GetValue(writeHistoryOption, GetValue(keepHistoryOption, false));
+                    backup.DeleteSourceFiles = GetValue(deleteSourceFilesOption, false);
+                    backup.DeleteSourceDirectories = GetValue(deleteSourceFilesOption, false);
 
                     string writeDiffFilesPath = GetValue(diffFilesPathOption, null);
                     if (writeDiffFilesPath != null)

@@ -19,6 +19,8 @@ namespace Meziantou.Backup
         public bool CanCreateDirectories { get; set; } = true;
         public bool ReadHistory { get; set; }
         public bool WriteHistory { get; set; }
+        public bool DeleteSourceFiles { get; set; }
+        public bool DeleteSourceDirectories { get; set; }
         public FileInfoEqualityMethods EqualityMethods { get; set; } = FileInfoEqualityMethods.Default;
 
         public event EventHandler<BackupActionEventArgs> Action;
@@ -30,10 +32,10 @@ namespace Meziantou.Backup
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            var sourceDirectory = await source.GetOrCreateDirectoryItemAsync("/", ct);
-            var targetDirectory = await target.GetOrCreateDirectoryItemAsync("/", ct);
+            var sourceDirectory = await source.GetOrCreateDirectoryItemAsync("/", ct).ConfigureAwait(false);
+            var targetDirectory = await target.GetOrCreateDirectoryItemAsync("/", ct).ConfigureAwait(false);
 
-            await SynchronizeAsync(sourceDirectory, targetDirectory, ct);
+            await SynchronizeAsync(sourceDirectory, targetDirectory, ct).ConfigureAwait(false);
         }
 
         public Task RunAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
@@ -93,7 +95,7 @@ namespace Meziantou.Backup
                     }
                 }
 
-                await Task.Delay(1000, ct);
+                await Task.Delay(1000, ct).ConfigureAwait(false);
             }
         }
 
@@ -275,6 +277,11 @@ namespace Meziantou.Backup
 
                     var fi = await RetryAsync(() => CopyFileAsync(path, targetItem, file, null, ct), ct).ConfigureAwait(false);
                     OnAction(new BackupActionEventArgs(BackupAction.Created, path, file, fi));
+
+                    if (DeleteSourceFiles)
+                    {
+                        await DeleteSourceItem(path, sourceItem, ct).ConfigureAwait(false);
+                    }
                 }
             }
             else
@@ -294,6 +301,11 @@ namespace Meziantou.Backup
                             // Continue synchonization of the new directory
                             await SynchronizeAsync(path.Concat(new[] { di.Name }).ToArray(), sourceDirectory, di, ct).ConfigureAwait(false);
                         }
+
+                        if (DeleteSourceFiles)
+                        {
+                            await DeleteSourceItem(path, sourceItem, ct).ConfigureAwait(false);
+                        }
                     }
                 }
             }
@@ -308,6 +320,11 @@ namespace Meziantou.Backup
 
                 var fi = await RetryAsync(() => CopyFileAsync(path, targetDirectory, sourceFile, targetFileName, ct), ct).ConfigureAwait(false);
                 OnAction(new BackupActionEventArgs(BackupAction.Updated, path, sourceFile, fi, diff));
+
+                if (DeleteSourceFiles)
+                {
+                    await DeleteSourceItem(path, sourceFile, ct).ConfigureAwait(false);
+                }
             }
         }
 
@@ -345,6 +362,15 @@ namespace Meziantou.Backup
             return SynchronizeAsync(new string[0], source, target, ct);
         }
 
+        private async Task DeleteSourceItem(IReadOnlyList<string> path, IFileSystemInfo fsi, CancellationToken ct)
+        {
+            if (!OnAction(new BackupActionEventArgs(BackupAction.Deleting, path, fsi, null)))
+                return;
+
+            await RetryAsync(() => fsi.DeleteAsync(ct), ct).ConfigureAwait(false);
+            OnAction(new BackupActionEventArgs(BackupAction.Deleted, path, fsi, null));
+        }
+
         protected virtual async Task SynchronizeAsync(IReadOnlyList<string> path, IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -378,7 +404,7 @@ namespace Meziantou.Backup
             var targetItems = targetItemResult.ToList();
 
             //
-            // Compute differencies
+            // Compute differencies (Create files and folders, update files, delete files)
             //
             foreach (var sourceItem in sourceItems)
             {
@@ -418,6 +444,13 @@ namespace Meziantou.Backup
                         await UpdateItemAsync(path, sourceFileItem, targetFileItem, target, fileName, diff, ct).ConfigureAwait(false);
                         continue;
                     }
+                    else
+                    {
+                        if (DeleteSourceFiles)
+                        {
+                            await DeleteSourceItem(path, sourceFileItem, ct).ConfigureAwait(false);
+                        }
+                    }
                 }
 
                 OnAction(new BackupActionEventArgs(BackupAction.SynchronizedDirectoryContent, path, sourceItem, target));
@@ -441,6 +474,11 @@ namespace Meziantou.Backup
                 if (targetItems.Get(directory) is IDirectoryInfo targetDirectory && targetDirectory.IsDirectory)
                 {
                     await SynchronizeAsync(path.Concat(new[] { targetDirectory.Name }).ToArray(), directory, targetDirectory, ct).ConfigureAwait(false);
+
+                    if (DeleteSourceDirectories)
+                    {
+                        await DeleteSourceItem(path, directory, ct).ConfigureAwait(false);
+                    }
                 }
             }
         }
