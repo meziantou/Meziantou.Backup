@@ -25,7 +25,7 @@ namespace Meziantou.Backup.FileSystem.Physical
 
         public Task<Stream> OpenReadAsync(CancellationToken ct)
         {
-            return Task.FromResult<Stream>(new FileStream(FullName, FileMode.Open));
+            return Task.FromResult<Stream>(new FileStream(FullName, FileMode.Open, FileAccess.Read, FileShare.Read));
         }
     }
 }
