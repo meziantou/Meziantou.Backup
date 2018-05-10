@@ -1,120 +1,18 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DBA84775-E8B2-4429-B9A7-0291E49CBA75}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Meziantou.Backup.Console</RootNamespace>
-    <AssemblyName>Meziantou.Backup.Console</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <TargetFramework>net461</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Meziantou.Framework.Security.CredentialManager, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Meziantou.Framework.Security.CredentialManager.1.0.4\lib\net46\Meziantou.Framework.Security.CredentialManager.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Extensions.CommandLineUtils, Version=1.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.CommandLineUtils.1.1.1\lib\net451\Microsoft.Extensions.CommandLineUtils.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj" />
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj" />
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Physical\Meziantou.Backup.FileSystem.Physical.csproj" />
+    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Sftp\Meziantou.Backup.FileSystem.Sftp.csproj" />
+    <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BackupConsole.cs" />
-    <Compile Include="BackupSummary.cs" />
-    <Compile Include="CommandLineApplicationExtensions.cs" />
-    <Compile Include="ConsoleLogger.cs" />
-    <Compile Include="ConsoleLoggerLevel.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <PackageReference Include="Meziantou.Framework.Security.CredentialManager" Version="1.0.4" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj">
-      <Project>{DCCA6461-63BA-479A-9792-4CE90334D561}</Project>
-      <Name>Meziantou.Backup.FileSystem.Abstractions</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Aes\Meziantou.Backup.FileSystem.Aes.csproj">
-      <Project>{9F6440DC-265E-465D-A161-ED053BF909F6}</Project>
-      <Name>Meziantou.Backup.FileSystem.Aes</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.OneDrive\Meziantou.Backup.FileSystem.OneDrive.csproj">
-      <Project>{79D203BC-2A1C-4A21-A625-E9DC59FB5194}</Project>
-      <Name>Meziantou.Backup.FileSystem.OneDrive</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Physical\Meziantou.Backup.FileSystem.Physical.csproj">
-      <Project>{968e75d1-b755-4e1e-809a-b619c2235f97}</Project>
-      <Name>Meziantou.Backup.FileSystem.Physical</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup.FileSystem.Sftp\Meziantou.Backup.FileSystem.Sftp.csproj">
-      <Project>{72626f1e-77e6-4c65-9444-2c5c38ce102c}</Project>
-      <Name>Meziantou.Backup.FileSystem.Sftp</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Meziantou.Backup\Meziantou.Backup.csproj">
-      <Project>{4015D7EE-649C-4A4A-AE4E-CA30E1D604BA}</Project>
-      <Name>Meziantou.Backup</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.6.2">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.6.2 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

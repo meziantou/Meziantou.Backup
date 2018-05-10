@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
+using Meziantou.Framework.Win32;
 using Meziantou.OneDrive;
 using Meziantou.OneDrive.Windows;
 
@@ -39,12 +40,9 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             if (data == null)
                 return;
 
-            if (data.TryGetValue("ApplicationName", out object o))
+            if (data.TryGetValue("ApplicationName", out object o) && o is string appName)
             {
-                if (o is string appName)
-                {
-                    Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName);
-                }
+                Client.RefreshTokenHandler = new CredentialManagerRefreshTokenHandler(appName, CredentialPersistence.LocalMachine);
             }
 
             if (data.TryGetValue("AuthenticateOnUnauthenticatedError", out o))

@@ -20,7 +20,7 @@ namespace Meziantou.Backup.FileSystem.AesTests
             var aesProvider = new AesFileSystem(inMemoryFileSystem);
             aesProvider.Version = AesVersion.Aes128;
             aesProvider.Password = "sample";
-            
+
             var aesRoot = await aesProvider.GetOrCreateDirectoryItemAsync("", CancellationToken.None);
 
             // Act
