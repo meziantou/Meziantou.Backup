@@ -11,7 +11,7 @@ using Renci.SshNet.Sftp;
 
 namespace Meziantou.Backup.FileSystem.Sftp
 {
-    public class SftpFileSystem : IFileSystem, IDisposable
+    public sealed class SftpFileSystem : IFileSystem, IDisposable
     {
         private const char PathSeparator = '/';
         private const char AltPathSeparator = '\\';
@@ -33,7 +33,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             }
         }
 
-        protected virtual void EnsureClient()
+        private void EnsureClient()
         {
             if (_client != null)
                 return;
@@ -41,13 +41,13 @@ namespace Meziantou.Backup.FileSystem.Sftp
             _client = CreateClient();
         }
 
-        public virtual Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
+        public Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
             var fileInfo = CreateDirectoryRecursively(path);
             return Task.FromResult<IDirectoryInfo>(fileInfo);
         }
 
-        protected virtual SftpClient CreateClient()
+        private SftpClient CreateClient()
         {
             SftpClient client = null;
             if (!string.IsNullOrEmpty(PrivateKeyFile))
@@ -83,7 +83,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return client;
         }
 
-        internal virtual Task<IReadOnlyCollection<SftpFileInfo>> ListDirectoryAsync(string path)
+        internal Task<IReadOnlyCollection<SftpFileInfo>> ListDirectoryAsync(string path)
         {
             path = NormalizePath(path);
 
@@ -112,7 +112,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return tcs.Task;
         }
 
-        protected virtual string NormalizePath(string path)
+        private string NormalizePath(string path)
         {
             if (path == null)
                 return null;
@@ -120,7 +120,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return path.Replace(AltPathSeparator, PathSeparator);
         }
 
-        protected virtual SftpFileInfo CreateDirectoryRecursively(string path)
+        private SftpFileInfo CreateDirectoryRecursively(string path)
         {
             path = NormalizePath(path);
             string current = "";
@@ -161,7 +161,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return new SftpFileInfo(this, file);
         }
 
-        internal virtual SftpFileInfo CreateDirectory(string parent, string name)
+        internal SftpFileInfo CreateDirectory(string parent, string name)
         {
             string fullPath = NormalizePath(parent) + PathSeparator + name;
 
@@ -170,7 +170,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return new SftpFileInfo(this, file);
         }
 
-        internal virtual Task<SftpFileInfo> UploadFileAsync(string parent, string fileName, Stream stream)
+        internal Task<SftpFileInfo> UploadFileAsync(string parent, string fileName, Stream stream)
         {
             string fullPath = NormalizePath(parent) + PathSeparator + fileName;
 
@@ -197,14 +197,14 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return tcs.Task;
         }
 
-        internal virtual Task<Stream> DownloadFileAsync(string fullPath)
+        internal Task<Stream> DownloadFileAsync(string fullPath)
         {
             var client = Client;
             var sftpFileStream = client.OpenRead(NormalizePath(fullPath));
             return Task.FromResult<Stream>(sftpFileStream);
         }
 
-        public virtual void Initialize(IDictionary<string, object> data)
+        public void Initialize(IDictionary<string, object> data)
         {
             if (data == null)
                 return;
@@ -249,7 +249,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             }
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
             if (_client != null)
             {

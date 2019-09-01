@@ -11,9 +11,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.Backup.FileSystem.AbstractionsTests
 {
     [TestClass]
-    public class HistoryFileTests
+    public sealed class HistoryFileTests
     {
-        private class FileInfo : IFileInfo
+        private sealed class FileInfo : IFileInfo
         {
             public FileInfo(string name)
             {

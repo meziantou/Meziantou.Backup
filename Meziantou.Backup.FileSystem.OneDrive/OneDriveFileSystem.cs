@@ -8,7 +8,7 @@ using Meziantou.OneDrive.Windows;
 
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
-    public class OneDriveFileSystem : IFileSystem, IAuthenticable
+    public sealed class OneDriveFileSystem : IFileSystem, IAuthenticable
     {
         public OneDriveClient Client { get; }
 

@@ -16,6 +16,6 @@ namespace Meziantou.Backup.Console
         DirectorySynchronizing = 0x40,
         FullPath = 0x80,
 
-        Default = Error | FileCreating | FileUpdating | FileDeleting | DirectoryCreating | DirectoryDeleting
+        Default = Error | FileCreating | FileUpdating | FileDeleting | DirectoryCreating | DirectoryDeleting,
     }
 }

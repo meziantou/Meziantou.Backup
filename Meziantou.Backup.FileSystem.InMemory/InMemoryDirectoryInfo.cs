@@ -8,9 +8,9 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.InMemory
 {
-    public class InMemoryDirectoryInfo : InMemoryFileSystemInfo, IDirectoryInfo
+    public sealed class InMemoryDirectoryInfo : InMemoryFileSystemInfo, IDirectoryInfo
     {
-        private StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
+        private readonly StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
 
         private readonly List<InMemoryFileSystemInfo> _children = new List<InMemoryFileSystemInfo>();
 

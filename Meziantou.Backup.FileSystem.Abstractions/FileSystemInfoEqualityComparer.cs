@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace Meziantou.Backup.FileSystem.Abstractions
 {
-    public class FileSystemInfoEqualityComparer : IEqualityComparer<IFileSystemInfo>
+    public sealed class FileSystemInfoEqualityComparer : IEqualityComparer<IFileSystemInfo>
     {
-        public StringComparison StringComparison { get; set; } = StringComparison.OrdinalIgnoreCase;
+        public StringComparer StringComparer { get; set; } = StringComparer.OrdinalIgnoreCase;
 
         public bool Equals(IFileSystemInfo x, IFileSystemInfo y)
         {
@@ -17,8 +17,8 @@ namespace Meziantou.Backup.FileSystem.Abstractions
 
             if (x.IsDirectory != y.IsDirectory)
                 return false;
-            
-            if (!string.Equals(x.Name, y.Name, StringComparison))
+
+            if (!StringComparer.Equals(x.Name, y.Name))
                 return false;
 
             return true;
@@ -29,7 +29,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             if (obj?.Name == null)
                 return 0;
 
-            return obj.Name.GetHashCode();
+            return StringComparer.GetHashCode(obj.Name);
         }
     }
 }

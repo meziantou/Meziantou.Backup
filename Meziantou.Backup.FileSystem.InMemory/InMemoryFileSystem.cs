@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Meziantou.Backup.FileSystem.InMemory
 {
-    public class InMemoryFileSystem : IFileSystem
+    public sealed class InMemoryFileSystem : IFileSystem
     {
         private readonly InMemoryDirectoryInfo _root = new InMemoryDirectoryInfo(null);
 
@@ -32,7 +32,7 @@ namespace Meziantou.Backup.FileSystem.InMemory
                 var part = parts[index];
                 if (!isDirectory && index == parts.Length - 1)
                 {
-                    di.CreateFileAsync(part, content ?? new byte[0], CancellationToken.None).Wait();
+                    di.CreateFileAsync(part, content ?? Array.Empty<byte>(), CancellationToken.None).Wait();
                 }
                 else
                 {

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Backup
 {
-    internal class StreamReadEventArgs : EventArgs
+    internal sealed class StreamReadEventArgs : EventArgs
     {
         public StreamReadEventArgs(byte[] bytes, int offset, int count)
         {
@@ -21,7 +21,7 @@ namespace Meziantou.Backup
         public int Count { get; }
     }
 
-    internal class ProgressStream : Stream
+    internal sealed class ProgressStream : Stream
     {
         private readonly Stream _stream;
         private readonly bool _ownStream;
@@ -88,7 +88,7 @@ namespace Meziantou.Backup
             set { _stream.Position = value; }
         }
 
-        protected virtual void OnStreamRead(StreamReadEventArgs e)
+        private void OnStreamRead(StreamReadEventArgs e)
         {
             StreamRead?.Invoke(this, e);
         }

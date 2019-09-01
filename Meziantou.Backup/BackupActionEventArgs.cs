@@ -4,7 +4,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup
 {
-    public class BackupActionEventArgs : CancelEventArgs
+    public sealed class BackupActionEventArgs : CancelEventArgs
     {
         public BackupActionEventArgs(BackupAction action, IReadOnlyList<string> path, IFileSystemInfo sourceItem, IFileSystemInfo targetItem, FileInfoEqualityMethods method = FileInfoEqualityMethods.None)
         {

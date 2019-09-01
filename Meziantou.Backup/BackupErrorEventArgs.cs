@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace Meziantou.Backup
 {
-    public class BackupErrorEventArgs : CancelEventArgs
+    public sealed class BackupErrorEventArgs : CancelEventArgs
     {
         public Exception Exception { get; }
         public int RetryCount { get; }

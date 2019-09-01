@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Meziantou.Backup.FileSystem.Aes
 {
-    internal class StreamEnumerator : Stream
+    internal sealed class StreamEnumerator : Stream
     {
         private long _position;
         private readonly bool _closeStreams;

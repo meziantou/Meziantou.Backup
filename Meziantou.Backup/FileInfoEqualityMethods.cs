@@ -14,6 +14,6 @@ namespace Meziantou.Backup
         ContentSha256 = 0x20,
         ContentSha512 = 0x40,
 
-        Default = LastWriteTime | Length
+        Default = LastWriteTime | Length,
     }
 }

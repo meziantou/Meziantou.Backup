@@ -9,7 +9,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 namespace Meziantou.Backup.FileSystem.Physical
 {
     [DebuggerDisplay("{FullName}")]
-    public class PhysicalDirectoryInfo : PhysicalFileSystemInfo, IDirectoryInfo
+    public sealed class PhysicalDirectoryInfo : PhysicalFileSystemInfo, IDirectoryInfo
     {
         private readonly DirectoryInfo _di;
         public override bool IsDirectory => true;

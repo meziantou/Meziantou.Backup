@@ -3,9 +3,9 @@ using System.Globalization;
 
 namespace Meziantou.Backup.FileSystem.Abstractions
 {
-    public class HistoryFile : IComparable<HistoryFile>, IComparable
+    public sealed class HistoryFile : IComparable<HistoryFile>, IComparable
     {
-        private static StringComparison _fileNameComparison = StringComparison.OrdinalIgnoreCase;
+        private static readonly StringComparison _fileNameComparison = StringComparison.OrdinalIgnoreCase;
         private string _fileName;
         public const string FileExtension = ".backuphistory";
         private const string DateTimeFormat = "yyyyMMddHHmmss";
@@ -27,9 +27,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
 
         public HistoryFile(IFileInfo file)
         {
-            if (file == null) throw new ArgumentNullException(nameof(file));
-
-            File = file;
+            File = file ?? throw new ArgumentNullException(nameof(file));
         }
 
         public string ComputeFileName()
@@ -82,7 +80,7 @@ namespace Meziantou.Backup.FileSystem.Abstractions
         {
             if (ReferenceEquals(null, obj)) return 1;
             if (ReferenceEquals(this, obj)) return 0;
-            if (!(obj is HistoryFile)) throw new ArgumentException($"Object must be of type {nameof(HistoryFile)}");
+            if (!(obj is HistoryFile)) throw new ArgumentException($"Object must be of type {nameof(HistoryFile)}", nameof(obj));
             return CompareTo((HistoryFile)obj);
         }
     }

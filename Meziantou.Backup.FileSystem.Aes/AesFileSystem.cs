@@ -7,10 +7,10 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.Aes
 {
-    public class AesFileSystem : IFileSystem
+    public sealed class AesFileSystem : IFileSystem
     {
         private readonly IFileSystem _fileSystem;
-        
+
         public AesVersion Version { get; set; }
         public string Password { get; set; }
         public bool EncryptFileName { get; set; }

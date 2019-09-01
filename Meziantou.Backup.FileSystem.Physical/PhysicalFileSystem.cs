@@ -6,7 +6,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.Physical
 {
-    public class PhysicalFileSystem : IFileSystem
+    public sealed class PhysicalFileSystem : IFileSystem
     {
         public Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)
         {
@@ -15,7 +15,7 @@ namespace Meziantou.Backup.FileSystem.Physical
             {
                 di = Directory.CreateDirectory(path);
             }
-            
+
             return Task.FromResult<IDirectoryInfo>(new PhysicalDirectoryInfo(di));
         }
 

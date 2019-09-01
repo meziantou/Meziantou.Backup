@@ -1,0 +1,2 @@
+dotnet publish --configuration Release --runtime win10-x64 /p:PublishSingleFile=true /p:PublishTrimmed=true Meziantou.Backup.Console\Meziantou.Backup.Console.csproj
+dotnet publish --configuration Release --runtime win10-x86 /p:PublishSingleFile=true /p:PublishTrimmed=true Meziantou.Backup.Console\Meziantou.Backup.Console.csproj

@@ -8,10 +8,10 @@ using Meziantou.Backup.FileSystem.Abstractions;
 namespace Meziantou.Backup.FileSystem.Physical
 {
     [DebuggerDisplay("{FullName}")]
-    public class PhysicalFileInfo : PhysicalFileSystemInfo, IFileInfo
+    public sealed class PhysicalFileInfo : PhysicalFileSystemInfo, IFileInfo
     {
         private readonly FileInfo _fi;
-        
+
         public PhysicalFileInfo(FileInfo fi) : base(fi)
         {
             if (fi == null) throw new ArgumentNullException(nameof(fi));

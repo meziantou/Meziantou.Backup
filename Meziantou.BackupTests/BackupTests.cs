@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.BackupTests
 {
     [TestClass]
-    public class BackupTests
+    public sealed class BackupTests
     {
         [TestMethod]
         public void TestMethod1()
@@ -227,7 +227,7 @@ namespace Meziantou.BackupTests
             var children = targetProvider.GetDirectory("/Sample/").Children;
             Assert.AreEqual(3, children.Count);
         }
-        
+
         [TestMethod]
         public void TestMethod10()
         {
@@ -288,7 +288,7 @@ namespace Meziantou.BackupTests
             Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1"));
             Assert.IsTrue(targetProvider.ContainsItem("Sample/sub1/item1.txt"));
             Assert.IsTrue(targetProvider.ContainsItem("Sample/sub2/"));
-                        
+
             Assert.IsFalse(sourceProvider.HasItems());
         }
 

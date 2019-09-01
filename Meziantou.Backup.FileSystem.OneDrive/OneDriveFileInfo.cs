@@ -11,7 +11,7 @@ using Meziantou.OneDrive;
 namespace Meziantou.Backup.FileSystem.OneDrive
 {
     [DebuggerDisplay("{FullName}")]
-    public class OneDriveFileInfo : IDirectoryInfo, IFileInfo, IFullName, IHashProvider
+    public sealed class OneDriveFileInfo : IDirectoryInfo, IFileInfo, IFullName, IHashProvider
     {
         private readonly OneDriveItem _item;
 
@@ -60,7 +60,7 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             return new OneDriveFileInfo(FileSystem, oneDriveItem);
         }
 
-        private bool OnChunkErrorHandler(ChunkUploadErrorEventArgs chunkUploadErrorEventArgs)
+        private static bool OnChunkErrorHandler(ChunkUploadErrorEventArgs chunkUploadErrorEventArgs)
         {
             return chunkUploadErrorEventArgs.AttemptCount < 3; // Retry 3 times
         }

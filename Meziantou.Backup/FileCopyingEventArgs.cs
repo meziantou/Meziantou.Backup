@@ -4,7 +4,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup
 {
-    public class FileCopyingEventArgs : EventArgs
+    public sealed class FileCopyingEventArgs : EventArgs
     {
         public FileCopyingEventArgs(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IFileSystemInfo targetItem, long currentPosition, long fileLength)
         {

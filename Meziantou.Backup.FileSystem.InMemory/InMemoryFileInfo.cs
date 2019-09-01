@@ -5,9 +5,9 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.InMemory
 {
-    public class InMemoryFileInfo : InMemoryFileSystemInfo, IFileInfo
+    public sealed class InMemoryFileInfo : InMemoryFileSystemInfo, IFileInfo
     {
-        public byte[] Content { get; set; } = new byte[0];
+        public byte[] Content { get; set; } = System.Array.Empty<byte>();
 
         public long Length => Content.Length;
 

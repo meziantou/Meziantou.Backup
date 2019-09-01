@@ -10,7 +10,7 @@ namespace Meziantou.Backup
 
         public CancelEventArgs(bool cancel)
         {
-            this.Cancel = cancel;
+            Cancel = cancel;
         }
 
         public bool Cancel { get; set; }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Backup.FileSystem.Aes
 {
-    internal class AesHeader
+    internal sealed class AesHeader
     {
         public AesHeader()
         {

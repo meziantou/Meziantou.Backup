@@ -7,7 +7,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.Aes
 {
-    internal class AesFileInfo : AesFileSystemInfo, IFileInfo
+    internal sealed class AesFileInfo : AesFileSystemInfo, IFileInfo
     {
         private readonly IFileInfo _fileInfo;
 
@@ -16,7 +16,7 @@ namespace Meziantou.Backup.FileSystem.Aes
             if (fileInfo == null) throw new ArgumentNullException(nameof(fileInfo));
             _fileInfo = fileInfo;
         }
-        
+
         public long Length
         {
             get

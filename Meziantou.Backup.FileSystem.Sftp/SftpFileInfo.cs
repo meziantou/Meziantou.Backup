@@ -8,7 +8,7 @@ using Renci.SshNet.Sftp;
 
 namespace Meziantou.Backup.FileSystem.Sftp
 {
-    public class SftpFileInfo : IDirectoryInfo, IFileInfo, IFullName
+    public sealed class SftpFileInfo : IDirectoryInfo, IFileInfo, IFullName
     {
         private readonly SftpFileSystem _fileSystem;
         private readonly SftpFile _file;

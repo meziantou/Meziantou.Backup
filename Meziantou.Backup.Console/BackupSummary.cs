@@ -4,7 +4,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.Console
 {
-    internal class BackupSummary
+    internal sealed class BackupSummary
     {
         private int _directoryCount;
         private int _directoryCreatedCount;

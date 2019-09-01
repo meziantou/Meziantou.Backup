@@ -6,14 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Meziantou.Backup.FileSystem.Abstractions;
 using Meziantou.Backup.FileSystem.Aes;
-using Meziantou.Framework.Security;
+using Meziantou.Framework.Win32;
 using Microsoft.Extensions.CommandLineUtils;
 
 namespace Meziantou.Backup.Console
 {
-    internal class BackupConsole
+    internal sealed class BackupConsole
     {
-        private string GetValue(CommandOption option, string defaultValue)
+        private static string GetValue(CommandOption option, string defaultValue)
         {
             if (!option.HasValue())
                 return defaultValue;
@@ -21,7 +21,7 @@ namespace Meziantou.Backup.Console
             return option.Value();
         }
 
-        private int GetValue(CommandOption option, int defaultValue)
+        private static int GetValue(CommandOption option, int defaultValue)
         {
             if (!option.HasValue())
                 return defaultValue;
@@ -32,7 +32,7 @@ namespace Meziantou.Backup.Console
             return defaultValue;
         }
 
-        private bool GetValue(CommandOption option, bool defaultValue)
+        private static bool GetValue(CommandOption option, bool defaultValue)
         {
             if (!option.HasValue())
                 return defaultValue;
@@ -46,21 +46,7 @@ namespace Meziantou.Backup.Console
             return defaultValue;
         }
 
-        private T GetValue<T>(CommandOption option, T defaultValue) where T : struct
-        {
-            if (!option.HasValue())
-                return defaultValue;
-
-            if (typeof(T).IsEnum)
-            {
-                if (Enum.TryParse(option.Value(), true, out T v))
-                    return v;
-            }
-
-            return defaultValue;
-        }
-
-        private T? GetValue<T>(CommandOption option, T? defaultValue) where T : struct
+        private static T GetValue<T>(CommandOption option, T defaultValue) where T : struct
         {
             if (!option.HasValue())
                 return defaultValue;
@@ -154,11 +140,9 @@ namespace Meziantou.Backup.Console
                                     e.Cancel = true;
                                     var fullPath = Path.Combine(writeDiffFilesPath, string.Join(Path.DirectorySeparatorChar.ToString(), e.Path));
                                     Directory.CreateDirectory(fullPath);
-                                    using (var stream = fi.OpenReadAsync(CancellationToken.None).Result)
-                                    using (var streamWriter = File.Create(Path.Combine(fullPath, e.SourceItem.Name)))
-                                    {
-                                        stream.CopyTo(streamWriter);
-                                    }
+                                    using var stream = fi.OpenReadAsync(CancellationToken.None).Result;
+                                    using var streamWriter = File.Create(Path.Combine(fullPath, e.SourceItem.Name));
+                                    stream.CopyTo(streamWriter);
                                 }
                             }
                         };
@@ -183,20 +167,18 @@ namespace Meziantou.Backup.Console
                         if (targetFileSystem == null)
                             return 4;
 
-                        using (var cts = new CancellationTokenSource())
-                        {
-                            System.Console.CancelKeyPress += (sender, eventArgs) =>
-                            {
-                                cts.Cancel();
-                                eventArgs.Cancel = true;
-                            };
+                        using var cts = new CancellationTokenSource();
+                        System.Console.CancelKeyPress += (sender, eventArgs) =>
+{
+    cts.Cancel();
+    eventArgs.Cancel = true;
+};
 
-                            if (!GetValue(testConfig, false))
-                            {
-                                var backupAsync = RunAsync(backup, sourceFileSystem, sourcePath, targetFileSystem, targetPath, cts.Token);
-                                var awaiter = backupAsync.GetAwaiter();
-                                awaiter.GetResult();
-                            }
+                        if (!GetValue(testConfig, false))
+                        {
+                            var backupAsync = RunAsync(backup, sourceFileSystem, sourcePath, targetFileSystem, targetPath, cts.Token);
+                            var awaiter = backupAsync.GetAwaiter();
+                            awaiter.GetResult();
                         }
                     }
                     catch (OperationCanceledException)
@@ -222,7 +204,7 @@ namespace Meziantou.Backup.Console
             app.Execute(args);
         }
 
-        private IFileSystem CreateAesFileSystem(IFileSystem fileSystem, CommandOption method, CommandOption password, CommandOption passwordName, CommandOption askPassword, CommandOption encryptFileNames, CommandOption encryptDirectoryNames)
+        private static IFileSystem CreateAesFileSystem(IFileSystem fileSystem, CommandOption method, CommandOption password, CommandOption passwordName, CommandOption askPassword, CommandOption encryptFileNames, CommandOption encryptDirectoryNames)
         {
             if (!password.HasValue() && !askPassword.HasValue() && !passwordName.HasValue())
                 return fileSystem;
@@ -312,7 +294,7 @@ namespace Meziantou.Backup.Console
             return fileSystemProvider;
         }
 
-        private string GetPath(IEnumerable<object> pathOptions)
+        private static string GetPath(IEnumerable<object> pathOptions)
         {
             foreach (var item in pathOptions)
             {
@@ -344,7 +326,7 @@ namespace Meziantou.Backup.Console
             return null;
         }
 
-        private async Task RunAsync(Backup backup, IFileSystem sourceFileSystem, string sourcePath, IFileSystem targetFileSystem, string targetPath, CancellationToken ct)
+        private static async Task RunAsync(Backup backup, IFileSystem sourceFileSystem, string sourcePath, IFileSystem targetFileSystem, string targetPath, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -365,12 +347,12 @@ namespace Meziantou.Backup.Console
             }
         }
 
-        protected virtual object CreateInstance(Type type)
+        private static object CreateInstance(Type type)
         {
             return Activator.CreateInstance(type);
         }
 
-        protected virtual Type GetType(string name)
+        private static Type GetType(string name)
         {
             if (string.IsNullOrEmpty(name) ||
                 string.Equals("file", name, StringComparison.InvariantCultureIgnoreCase) ||
@@ -389,7 +371,7 @@ namespace Meziantou.Backup.Console
             return Type.GetType(name, true);
         }
 
-        private async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
+        private static async Task<IDirectoryInfo> GetOrCreateRootDirectoryItemAsync(IFileSystem fileSystem, string path, CancellationToken ct)
         {
             if (fileSystem is IAuthenticable authenticable)
             {
@@ -399,7 +381,7 @@ namespace Meziantou.Backup.Console
             return await fileSystem.GetOrCreateDirectoryItemAsync(path, ct).ConfigureAwait(false);
         }
 
-        public string GetPassword()
+        public static string GetPassword()
         {
             var pwd = new StringBuilder();
             while (true)

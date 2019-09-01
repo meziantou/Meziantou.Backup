@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.Backup.FileSystem.AesTests
 {
     [TestClass]
-    public class AesFileSystemTests
+    public sealed class AesFileSystemTests
     {
         [TestMethod]
         public async Task TestMethod1()

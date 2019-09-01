@@ -9,7 +9,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.FileSystem.Aes
 {
-    internal class AesDirectoryInfo : AesFileSystemInfo, IDirectoryInfo
+    internal sealed class AesDirectoryInfo : AesFileSystemInfo, IDirectoryInfo
     {
         private readonly IDirectoryInfo _directoryInfo;
 

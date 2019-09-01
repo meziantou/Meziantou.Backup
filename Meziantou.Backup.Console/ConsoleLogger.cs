@@ -6,15 +6,13 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup.Console
 {
-    internal class ConsoleLogger
+    internal sealed class ConsoleLogger
     {
-        private readonly Backup _backup;
         public ConsoleLoggerLevel Level { get; set; }
 
         public ConsoleLogger(Backup backup)
         {
-            if (backup == null) throw new ArgumentNullException(nameof(backup));
-            _backup = backup;
+            _ = backup ?? throw new ArgumentNullException(nameof(backup));
 
             backup.Action += Backup_Action;
             backup.Copying += Backup_Copying;
@@ -23,7 +21,7 @@ namespace Meziantou.Backup.Console
 
         private void Backup_Error(object sender, BackupErrorEventArgs e)
         {
-            if ((this.Level & ConsoleLoggerLevel.Error) != 0)
+            if ((Level & ConsoleLoggerLevel.Error) != 0)
             {
                 SetConsoleColor(ConsoleColor.Red, () =>
                 {
@@ -64,7 +62,7 @@ namespace Meziantou.Backup.Console
             }
         }
 
-        private void SetConsoleColor(ConsoleColor color, Action action)
+        private static void SetConsoleColor(ConsoleColor color, Action action)
         {
             var currentColor = System.Console.ForegroundColor;
             System.Console.ForegroundColor = color;
@@ -85,7 +83,7 @@ namespace Meziantou.Backup.Console
                 e.Action == BackupAction.Updated ||
                 e.Action == BackupAction.Deleted)
                 return false;
-            
+
             if (e.Action == BackupAction.Creating && Level.HasFlag(ConsoleLoggerLevel.FileCreating) && e.SourceItem.IsFile())
                 return true;
 
@@ -107,7 +105,7 @@ namespace Meziantou.Backup.Console
             return false;
         }
 
-        private string FriendlyFileLength(long length)
+        private static string FriendlyFileLength(long length)
         {
             string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
             int s = 0;
@@ -143,7 +141,7 @@ namespace Meziantou.Backup.Console
             }
         }
 
-        private string GetFullName(IReadOnlyCollection<string> path, IFileSystemInfo item, bool relative)
+        private static string GetFullName(IReadOnlyCollection<string> path, IFileSystemInfo item, bool relative)
         {
             if (!relative)
             {
@@ -155,11 +153,11 @@ namespace Meziantou.Backup.Console
                 return "/";
 
             StringBuilder sb = new StringBuilder();
-            sb.Append("/");
+            sb.Append('/');
             foreach (var part in path)
             {
                 sb.Append(part);
-                sb.Append("/");
+                sb.Append('/');
             }
 
             sb.Append(item?.Name);

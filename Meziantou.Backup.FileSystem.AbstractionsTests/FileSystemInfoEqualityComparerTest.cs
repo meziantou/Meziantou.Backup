@@ -7,9 +7,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.Backup.FileSystem.AbstractionsTests
 {
     [TestClass]
-    public class FileSystemInfoEqualityComparerTest
+    public sealed class FileSystemInfoEqualityComparerTest
     {
-        private class TestFileSystemInfo : IFileSystemInfo
+        private sealed class TestFileSystemInfo : IFileSystemInfo
         {
             public bool IsDirectory { get; set; }
             public string Name { get; set; }
@@ -49,7 +49,7 @@ namespace Meziantou.Backup.FileSystem.AbstractionsTests
             // Assert
             Assert.AreEqual(true, result);
         }
-        
+
         [TestMethod]
         public void Equals02()
         {

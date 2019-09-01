@@ -12,6 +12,6 @@ namespace Meziantou.Backup
         Synchronizing,
         Synchronized,
         SynchronizingDirectoryContent,
-        SynchronizedDirectoryContent
+        SynchronizedDirectoryContent,
     }
 }

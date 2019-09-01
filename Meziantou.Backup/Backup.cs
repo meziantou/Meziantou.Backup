@@ -8,7 +8,7 @@ using Meziantou.Backup.FileSystem.Abstractions;
 
 namespace Meziantou.Backup
 {
-    public class Backup
+    public sealed class Backup
     {
         public int RetryCount { get; set; } = 3;
         public bool ContinueOnError { get; set; } = true;
@@ -62,7 +62,7 @@ namespace Meziantou.Backup
                     {
                         if (ContinueOnError)
                         {
-                            return default(T);
+                            return default;
                         }
 
                         throw;
@@ -99,7 +99,7 @@ namespace Meziantou.Backup
             }
         }
 
-        protected virtual async Task<FileInfoEqualityMethods> AreEqualAsync(IFileInfo source, IFileInfo target, CancellationToken ct)
+        private async Task<FileInfoEqualityMethods> AreEqualAsync(IFileInfo source, IFileInfo target, CancellationToken ct)
         {
             if (source == null && target == null)
                 return FileInfoEqualityMethods.None;
@@ -179,7 +179,7 @@ namespace Meziantou.Backup
             return true;
         }
 
-        protected virtual async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(IFileInfo fileInfo, CancellationToken ct)
+        private async Task<IList<Tuple<FileInfoEqualityMethods, byte[]>>> ComputeHashAsync(IFileInfo fileInfo, CancellationToken ct)
         {
             if (fileInfo is IHashProvider hashProvider)
             {
@@ -357,9 +357,9 @@ namespace Meziantou.Backup
             }
         }
 
-        protected Task SynchronizeAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        private Task SynchronizeAsync(IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
-            return SynchronizeAsync(new string[0], source, target, ct);
+            return SynchronizeAsync(Array.Empty<string>(), source, target, ct);
         }
 
         private async Task DeleteSourceItem(IReadOnlyList<string> path, IFileSystemInfo fsi, CancellationToken ct)
@@ -371,7 +371,7 @@ namespace Meziantou.Backup
             OnAction(new BackupActionEventArgs(BackupAction.Deleted, path, fsi, null));
         }
 
-        protected virtual async Task SynchronizeAsync(IReadOnlyList<string> path, IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
+        private async Task SynchronizeAsync(IReadOnlyList<string> path, IDirectoryInfo source, IDirectoryInfo target, CancellationToken ct)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
@@ -483,7 +483,7 @@ namespace Meziantou.Backup
             }
         }
 
-        protected virtual bool OnAction(BackupActionEventArgs e)
+        private bool OnAction(BackupActionEventArgs e)
         {
             if (e == null) throw new ArgumentNullException(nameof(e));
 
@@ -491,7 +491,7 @@ namespace Meziantou.Backup
             return !e.Cancel;
         }
 
-        protected virtual bool OnError(BackupErrorEventArgs e)
+        private bool OnError(BackupErrorEventArgs e)
         {
             if (e == null) throw new ArgumentNullException(nameof(e));
 
@@ -499,12 +499,12 @@ namespace Meziantou.Backup
             return !e.Cancel;
         }
 
-        protected virtual void OnCopying(FileCopyingEventArgs e)
+        private void OnCopying(FileCopyingEventArgs e)
         {
             Copying?.Invoke(this, e);
         }
 
-        private class HashResult : IDisposable
+        private sealed class HashResult : IDisposable
         {
             private HashAlgorithm _algorithm;
 
@@ -547,7 +547,7 @@ namespace Meziantou.Backup
 
             public void TransformFinalBlock()
             {
-                _algorithm.TransformFinalBlock(new byte[0], 0, 0);
+                _algorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 Hash = _algorithm.Hash;
             }
 
