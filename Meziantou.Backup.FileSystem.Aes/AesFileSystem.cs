@@ -27,11 +27,9 @@ namespace Meziantou.Backup.FileSystem.Aes
         {
             if (salt == null) throw new ArgumentNullException(nameof(salt));
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(Password, salt, IterationCount))
-            {
-                int length = version == AesVersion.Aes128 ? 16 : 32;
-                return deriveBytes.GetBytes(length);
-            }
+            using var deriveBytes = new Rfc2898DeriveBytes(Password, salt, IterationCount);
+            int length = version == AesVersion.Aes128 ? 16 : 32;
+            return deriveBytes.GetBytes(length);
         }
 
         public async Task<IDirectoryInfo> GetOrCreateDirectoryItemAsync(string path, CancellationToken ct)

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,8 +25,8 @@ namespace Meziantou.Backup.FileSystem.Aes
             var versionByte = new byte[sizeof(AesVersion)];
             var iv = new byte[16];
 
-            await stream.ReadAsync(versionByte, 0, versionByte.Length, ct).ConfigureAwait(false);
-            await stream.ReadAsync(iv, 0, iv.Length, ct).ConfigureAwait(false);
+            await stream.ReadAsync(versionByte.AsMemory(), ct).ConfigureAwait(false);
+            await stream.ReadAsync(iv.AsMemory(), ct).ConfigureAwait(false);
 
             var header = new AesHeader();
             header.Version = (AesVersion)versionByte[0];

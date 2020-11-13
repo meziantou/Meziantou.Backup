@@ -81,10 +81,8 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (file == null) throw new ArgumentNullException(nameof(file));
 
-            using (var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false))
-            {
-                return await directory.CreateFileAsync(fileName, inputStream, file.Length, ct).ConfigureAwait(false);
-            }
+            using var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false);
+            return await directory.CreateFileAsync(fileName, inputStream, file.Length, ct).ConfigureAwait(false);
         }
 
         public static bool IsFile(this IFileSystemInfo fsi)
@@ -107,22 +105,18 @@ namespace Meziantou.Backup.FileSystem.Abstractions
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (content == null) throw new ArgumentNullException(nameof(content));
 
-            using (MemoryStream ms = new MemoryStream(content))
-            {
-                return await parent.CreateFileAsync(name, ms, ms.Length, ct).ConfigureAwait(false);
-            }
+            using MemoryStream ms = new MemoryStream(content);
+            return await parent.CreateFileAsync(name, ms, ms.Length, ct).ConfigureAwait(false);
         }
 
         public static async Task<byte[]> GetContentBytesAsync(this IFileInfo fi, CancellationToken ct)
         {
             if (fi == null) throw new ArgumentNullException(nameof(fi));
 
-            using (var stream = await fi.OpenReadAsync(ct))
-            using (var ms = new MemoryStream())
-            {
-                await stream.CopyToAsync(ms, 81920, ct);
-                return ms.ToArray();
-            }
+            using var stream = await fi.OpenReadAsync(ct);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms, 81920, ct);
+            return ms.ToArray();
         }
     }
 }

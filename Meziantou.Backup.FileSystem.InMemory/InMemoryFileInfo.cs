@@ -22,12 +22,10 @@ namespace Meziantou.Backup.FileSystem.InMemory
 
         public void SetContent(Stream stream)
         {
-            using (var ms = new MemoryStream())
-            {
-                stream.CopyTo(ms);
-                ms.Seek(0, SeekOrigin.Begin);
-                Content = ms.ToArray();
-            }
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            Content = ms.ToArray();
         }
     }
 }

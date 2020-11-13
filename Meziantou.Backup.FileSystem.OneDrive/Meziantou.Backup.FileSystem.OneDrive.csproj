@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Backup.FileSystem.Abstractions\Meziantou.Backup.FileSystem.Abstractions.csproj" />
-    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.3.5" />
+    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.4.0" />
 
     <PackageReference Include="Meziantou.OneDrive" Version="1.0.3" />
     <PackageReference Include="Meziantou.OneDrive.Windows" Version="1.0.3" />

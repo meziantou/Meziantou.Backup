@@ -52,18 +52,16 @@ namespace Meziantou.Backup.FileSystem.Sftp
             SftpClient client = null;
             if (!string.IsNullOrEmpty(PrivateKeyFile))
             {
-                using (var pkf = new PrivateKeyFile(PrivateKeyFile, Password))
+                using var pkf = new PrivateKeyFile(PrivateKeyFile, Password);
+                try
                 {
-                    try
-                    {
-                        client = new SftpClient(Host, Port, Username, pkf);
-                        client.Connect();
-                    }
-                    catch
-                    {
-                        client?.Dispose();
-                        throw;
-                    }
+                    client = new SftpClient(Host, Port, Username, pkf);
+                    client.Connect();
+                }
+                catch
+                {
+                    client?.Dispose();
+                    throw;
                 }
             }
             else
@@ -112,7 +110,7 @@ namespace Meziantou.Backup.FileSystem.Sftp
             return tcs.Task;
         }
 
-        private string NormalizePath(string path)
+        private static string NormalizePath(string path)
         {
             if (path == null)
                 return null;

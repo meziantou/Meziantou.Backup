@@ -50,24 +50,18 @@ namespace Meziantou.Backup.FileSystem.Aes
                 name = EncryptName(name);
             }
 
-            using (var aes = CreateAes(FileSystem.Version))
-            {
-                using (var headerStream = new MemoryStream())
-                {
-                    var aesHeader = new AesHeader(FileSystem.Version, aes.IV);
-                    aesHeader.Write(headerStream);
-                    headerStream.Seek(0, SeekOrigin.Begin);
+            using var aes = CreateAes(FileSystem.Version);
+            using var headerStream = new MemoryStream();
+            var aesHeader = new AesHeader(FileSystem.Version, aes.IV);
+            aesHeader.Write(headerStream);
+            headerStream.Seek(0, SeekOrigin.Begin);
 
-                    var key = FileSystem.ComputeKey(aes.IV, FileSystem.Version);
-                    ICryptoTransform encryptor = CreateTransform(aes, key, aes.IV, AesMode.Encrypt);
-                    using (var cryptoStream = new CryptoStream(stream, encryptor, CryptoStreamMode.Read))
-                    using (var concat = new StreamEnumerator(new Stream[] { headerStream, cryptoStream }, true))
-                    {
-                        var fileInfo = await _directoryInfo.CreateFileAsync(name, concat, length, ct).ConfigureAwait(false);
-                        return new AesFileInfo(FileSystem, fileInfo);
-                    }
-                }
-            }
+            var key = FileSystem.ComputeKey(aes.IV, FileSystem.Version);
+            ICryptoTransform encryptor = CreateTransform(aes, key, aes.IV, AesMode.Encrypt);
+            using var cryptoStream = new CryptoStream(stream, encryptor, CryptoStreamMode.Read);
+            using var concat = new StreamEnumerator(new Stream[] { headerStream, cryptoStream }, true);
+            var fileInfo = await _directoryInfo.CreateFileAsync(name, concat, length, ct).ConfigureAwait(false);
+            return new AesFileInfo(FileSystem, fileInfo);
         }
 
         public async Task<IDirectoryInfo> CreateDirectoryAsync(string name, CancellationToken ct)

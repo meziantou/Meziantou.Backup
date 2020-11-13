@@ -248,7 +248,7 @@ namespace Meziantou.Backup.Console
             return aesFs;
         }
 
-        private IFileSystem GetFileSystem(IEnumerable<object> pathOptions, CommandOption configuration, out string path)
+        private static IFileSystem GetFileSystem(IEnumerable<object> pathOptions, CommandOption configuration, out string path)
         {
             path = null;
             var fullPath = GetPath(pathOptions);

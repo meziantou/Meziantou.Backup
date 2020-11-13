@@ -122,24 +122,22 @@ namespace Meziantou.Backup
             // Use content or hash, not both (useless)
             if (EqualityMethods.HasFlag(FileInfoEqualityMethods.Content))
             {
-                using (var xStream = await source.OpenReadAsync(ct).ConfigureAwait(false))
-                using (var yStream = await target.OpenReadAsync(ct).ConfigureAwait(false))
+                using var xStream = await source.OpenReadAsync(ct).ConfigureAwait(false);
+                using var yStream = await target.OpenReadAsync(ct).ConfigureAwait(false);
+                byte[] xBuffer = new byte[81920];
+                byte[] yBuffer = new byte[81920];
+                var xTask = xStream.ReadAsync(xBuffer, 0, xBuffer.Length, ct);
+                var yTask = yStream.ReadAsync(yBuffer, 0, yBuffer.Length, ct);
+                var xRead = await xTask.ConfigureAwait(false);
+                var yRead = await yTask.ConfigureAwait(false);
+
+                if (xRead != yRead)
+                    return FileInfoEqualityMethods.Content;
+
+                for (int i = 0; i < xRead; i++)
                 {
-                    byte[] xBuffer = new byte[81920];
-                    byte[] yBuffer = new byte[81920];
-                    var xTask = xStream.ReadAsync(xBuffer, 0, xBuffer.Length, ct);
-                    var yTask = yStream.ReadAsync(yBuffer, 0, yBuffer.Length, ct);
-                    var xRead = await xTask.ConfigureAwait(false);
-                    var yRead = await yTask.ConfigureAwait(false);
-
-                    if (xRead != yRead)
+                    if (xBuffer[i] != yBuffer[i])
                         return FileInfoEqualityMethods.Content;
-
-                    for (int i = 0; i < xRead; i++)
-                    {
-                        if (xBuffer[i] != yBuffer[i])
-                            return FileInfoEqualityMethods.Content;
-                    }
                 }
             }
             else if (EqualityMethods.HasFlag(FileInfoEqualityMethods.ContentMd5) ||
@@ -250,20 +248,16 @@ namespace Meziantou.Backup
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (file == null) throw new ArgumentNullException(nameof(file));
 
-            using (var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false))
+            using var inputStream = await file.OpenReadAsync(ct).ConfigureAwait(false);
+            using var progressStream = new ProgressStream(inputStream, true);
+            long currentPosition = 0;
+            progressStream.StreamRead += (sender, args) =>
             {
-                using (var progressStream = new ProgressStream(inputStream, true))
-                {
-                    long currentPosition = 0;
-                    progressStream.StreamRead += (sender, args) =>
-                    {
-                        currentPosition += args.Count;
-                        OnCopying(new FileCopyingEventArgs(path, file, directory, currentPosition, file.Length));
-                    };
+                currentPosition += args.Count;
+                OnCopying(new FileCopyingEventArgs(path, file, directory, currentPosition, file.Length));
+            };
 
-                    return await directory.CreateFileAsync(targetFileName ?? file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
-                }
-            }
+            return await directory.CreateFileAsync(targetFileName ?? file.Name, progressStream, file.Length, ct).ConfigureAwait(false);
         }
 
         private async Task CreateItemAsync(IReadOnlyList<string> path, IFileSystemInfo sourceItem, IDirectoryInfo targetItem, CancellationToken ct)

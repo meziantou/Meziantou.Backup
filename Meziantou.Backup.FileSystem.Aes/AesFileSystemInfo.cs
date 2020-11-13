@@ -88,25 +88,19 @@ namespace Meziantou.Backup.FileSystem.Aes
             var bytes = Encoding.UTF8.GetBytes(name);
 
             var aesVersion = FileSystem.Version;
-            using (var aes = CreateAes(aesVersion))
-            {
-                var iv = aes.IV;
+            using var aes = CreateAes(aesVersion);
+            var iv = aes.IV;
 
-                var key = FileSystem.ComputeKey(iv, aesVersion);
-                using (var tranform = aes.CreateEncryptor(key, iv))
-                {
-                    using (var outputStream = new MemoryStream())
-                    {
-                        var aesHeader = new AesHeader(aesVersion, iv);
-                        aesHeader.Write(outputStream);
+            var key = FileSystem.ComputeKey(iv, aesVersion);
+            using var tranform = aes.CreateEncryptor(key, iv);
+            using var outputStream = new MemoryStream();
+            var aesHeader = new AesHeader(aesVersion, iv);
+            aesHeader.Write(outputStream);
 
-                        var encryptedBytes = tranform.TransformFinalBlock(bytes, 0, bytes.Length);
-                        outputStream.Write(encryptedBytes, 0, encryptedBytes.Length);
+            var encryptedBytes = tranform.TransformFinalBlock(bytes, 0, bytes.Length);
+            outputStream.Write(encryptedBytes, 0, encryptedBytes.Length);
 
-                        return Convert.ToBase64String(outputStream.ToArray()).Replace('/', '-');
-                    }
-                }
-            }
+            return Convert.ToBase64String(outputStream.ToArray()).Replace('/', '-');
         }
 
         protected virtual string DecryptName(string name)
@@ -114,28 +108,22 @@ namespace Meziantou.Backup.FileSystem.Aes
             try
             {
                 byte[] bytes = Convert.FromBase64String(name.Replace('-', '/'));
-                using (var ms = new MemoryStream(bytes))
+                using var ms = new MemoryStream(bytes);
+                var header = AesHeader.Read(ms);
+
+                var aesVersion = header.Version;
+                using var aes = CreateAes(aesVersion);
+                var iv = header.IV;
+                var key = FileSystem.ComputeKey(iv, aesVersion);
+
+                using var tranform = aes.CreateDecryptor(key, iv);
+                using var outputStream = new MemoryStream();
+                using (var cryptoStream = new CryptoStream(outputStream, tranform, CryptoStreamMode.Write))
                 {
-                    var header = AesHeader.Read(ms);
-
-                    var aesVersion = header.Version;
-                    using (var aes = CreateAes(aesVersion))
-                    {
-                        var iv = header.IV;
-                        var key = FileSystem.ComputeKey(iv, aesVersion);
-
-                        using (var tranform = aes.CreateDecryptor(key, iv))
-                        using (var outputStream = new MemoryStream())
-                        {
-                            using (var cryptoStream = new CryptoStream(outputStream, tranform, CryptoStreamMode.Write))
-                            {
-                                ms.CopyTo(cryptoStream);
-                            }
-
-                            return Encoding.UTF8.GetString(outputStream.ToArray());
-                        }
-                    }
+                    ms.CopyTo(cryptoStream);
                 }
+
+                return Encoding.UTF8.GetString(outputStream.ToArray());
             }
             catch
             {
