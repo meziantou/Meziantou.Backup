@@ -71,9 +71,16 @@ namespace Meziantou.Backup.FileSystem.OneDrive
             return new OneDriveFileInfo(FileSystem, item);
         }
 
-        public Task<Stream> OpenReadAsync(CancellationToken ct)
+        public async Task<Stream> OpenReadAsync(CancellationToken ct)
         {
-            return _item.DownloadAsync(ct);
+            try
+            {
+                return await _item.DownloadAsync(ct);
+            }
+            catch (OneDriveException ex) when (ex.Message.Contains("The specified item does not have content", StringComparison.Ordinal))
+            {
+                return Stream.Null;
+            }
         }
 
         public byte[] GetHash(string algorithmName)
